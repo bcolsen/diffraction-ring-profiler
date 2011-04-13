@@ -316,8 +316,10 @@ class diffaction_int(wx.Frame):
             'Diffraction Ring Profiler',size=(550,350))
         
         self.Bind(wx.EVT_CLOSE, self.OnExit)
-        
 
+        iconFile = "diff_profiler_ico.ico"
+        icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
+        self.SetIcon(icon1)
 
         # dirname is an APPLICATION variable that we're choosing to store
         # in with the frame - it's the parent directory for any file we
