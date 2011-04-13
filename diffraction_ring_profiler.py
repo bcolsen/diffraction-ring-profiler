@@ -37,6 +37,20 @@ from matplotlib import rc
 
 from dm3reader import getDM3FileInfo
 
+import sys
+
+pathname = os.path.dirname(sys.argv[0])
+fullpath = os.path.abspath(pathname) 
+os.chdir(fullpath)
+args = sys.argv[1:] 
+
+print args
+#with file('log.txt', 'w') as outfile:
+#    outfile.write('# Args\n')
+#    outfile.write(str(args))
+    
+
+
 rc('savefig', dpi=600)
 rc("xtick", direction="out")
 rc("ytick", direction="out")
@@ -297,11 +311,12 @@ print cursord
 
 class diffaction_int(wx.Frame):
 
-    def __init__(self):
+    def __init__(self, filename = None):
         wx.Frame.__init__(self,None,-1,
             'Diffraction Ring Profiler',size=(550,350))
         
         self.Bind(wx.EVT_CLOSE, self.OnExit)
+        
 
 
         # dirname is an APPLICATION variable that we're choosing to store
@@ -407,7 +422,11 @@ class diffaction_int(wx.Frame):
         
         self.SetSizer(self.sizer)
         self.Fit()
-
+        
+        if filename:
+            print filename[0]
+            self.filename = filename[0]
+            self.openimage()
 
     def OnPaint(self, event):
         self.canvas.draw()
@@ -444,93 +463,96 @@ class diffaction_int(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             self.filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
-            
+            self.openimage()
             print self.dirname
+        dlg.Destroy()
+        
+    def openimage(self):
+    
+        global circles
+        global pattern_open
+        global size
+        global point3
+        global count
+        global cid
+        global camlen
+        global wavelen
+        global imgcal
+        global accv
+        
+        count = 0
+        circles = []
+        point3 = array([])
+        
+        self.canvas.mpl_disconnect(cid)
+        
+        name, ext = os.path.splitext( self.filename )            
+        #print count, centers, circle
+        print ext
+        
+        if ext=='.dm3' or ext=='.DM3':
+            imageData, pattern_open = getDM3FileInfo(os.path.join(self.dirname, self.filename), return_array=True)
+            pattern_open = array(pattern_open)
+            pattern_open.shape = int(imageData['y_res']), int(imageData['x_res'])
+            #print pattern_open[[182],[1336]]
+            a = img_con16
+            print imageData['mag'],imageData['hv']
+            accv = int(float(imageData['hv'])/1000.0)
+            if imageData['mode'] == 'DIFFRACTION':
+                camlen = int(float(imageData['mag'])/10.0)
+            print camlen, accv
+        else:
+            im = Image.open(os.path.join(self.dirname, self.filename))
+            Image._initialized=2
             
-            global circles
-            global pattern_open
-            global size
-            global point3
-            global count
-            global cid
-            global camlen
-            global wavelen
-            global imgcal
-            global accv
-            
-            count = 0
-            circles = []
-            point3 = array([])
-            
-            self.canvas.mpl_disconnect(cid)
-            
-            name, ext = os.path.splitext( self.filename )            
-            #print count, centers, circle
-            print ext
-            
-            if ext=='.dm3' or ext=='.DM3':
-                imageData, pattern_open = getDM3FileInfo(os.path.join(self.dirname, self.filename), return_array=True)
-                pattern_open = array(pattern_open)
-                pattern_open.shape = int(imageData['y_res']), int(imageData['x_res'])
-                #print pattern_open[[182],[1336]]
+            if im.mode=='L':
+                # return MxN luminance array
+                x_str = im.tostring('raw',im.mode,0,1)
+                pattern_open = fromstring(x_str,uint8)
+                pattern_open.shape = im.size[1], im.size[0]
+                a = img_con
+            elif im.mode=='I;16':
+                # return MxN luminance array
+                x_str = im.tostring('raw',im.mode,0,1)
+                pattern_open = fromstring(x_str,uint16)
+                pattern_open.shape = im.size[1], im.size[0]
                 a = img_con16
-                print imageData['mag'],imageData['hv']
-                accv = int(float(imageData['hv'])/1000.0)
-                if imageData['mode'] == 'DIFFRACTION':
-                    camlen = int(float(imageData['mag'])/10.0)
-                print camlen, accv
             else:
-                im = Image.open(os.path.join(self.dirname, self.filename))
-                Image._initialized=2
-                
-                if im.mode=='L':
-                    # return MxN luminance array
+                # return MxN luminance array
+                try:
+                    im = im.convert('L')
                     x_str = im.tostring('raw',im.mode,0,1)
                     pattern_open = fromstring(x_str,uint8)
                     pattern_open.shape = im.size[1], im.size[0]
                     a = img_con
-                elif im.mode=='I;16':
-                    # return MxN luminance array
-                    x_str = im.tostring('raw',im.mode,0,1)
-                    pattern_open = fromstring(x_str,uint16)
-                    pattern_open.shape = im.size[1], im.size[0]
-                    a = img_con16
-                else:
-                    # return MxN luminance array
-                    try:
-                        im = im.convert('L')
-                        x_str = im.tostring('raw',im.mode,0,1)
-                        pattern_open = fromstring(x_str,uint8)
-                        pattern_open.shape = im.size[1], im.size[0]
-                        a = img_con
-                    except ValueError:
-                        dlg.Destroy()
-                        error_file = 'Image file must be grayscale.'
-                        print error_file
-                        error_int_dlg = Error(frame, -1, 'Error', error_file)
-                        error_int_dlg.Show(True)
-                        error_int_dlg.Centre()
-                        self.axes.clear()
-                        self.axes.imshow(pattern, cmap='gray', aspect='equal')
-                        self.canvas.draw()
-                        pattern_open = array([])
-                        self.SetTitle("Diffraction Ring Profiler")
-                        return
+                except ValueError:
+                    dlg.Destroy()
+                    error_file = 'Image file must be grayscale.'
+                    print error_file
+                    error_int_dlg = Error(frame, -1, 'Error', error_file)
+                    error_int_dlg.Show(True)
+                    error_int_dlg.Centre()
+                    self.axes.clear()
+                    self.axes.imshow(pattern, cmap='gray', aspect='equal')
+                    self.canvas.draw()
+                    pattern_open = array([])
+                    self.SetTitle("Diffraction Ring Profiler")
+                    return
 
-            log_pattern = log(1+a*pattern_open)#/log(1+a*pattern).max()*255
-            size = pattern_open.shape
-                        
-            self.axes.clear()
-            self.axes.imshow(log_pattern, cmap='gray', aspect='equal', origin='upper')
-            self.axes.xaxis.set_ticks_position('bottom')
-            self.axes.yaxis.set_ticks_position('left')
-            self.canvas.draw()
-            
-            # Report on name of latest file read
-            self.SetTitle("Diffraction Ring Profiler - "+self.filename)
-            # Later - could be enhanced to include a "changed" flag whenever
-            # the text is actually changed, could also be altered on "save" ...
-            dlg.Destroy()
+        log_pattern = log(1+a*pattern_open)#/log(1+a*pattern).max()*255
+        size = pattern_open.shape
+                    
+        self.axes.clear()
+        self.axes.imshow(log_pattern, cmap='gray', aspect='equal', origin='upper')
+        self.axes.xaxis.set_ticks_position('bottom')
+        self.axes.yaxis.set_ticks_position('left')
+        self.canvas.draw()
+        
+        # Report on name of latest file read
+        self.SetTitle("Diffraction Ring Profiler - "+self.filename)
+        # Later - could be enhanced to include a "changed" flag whenever
+        # the text is actually changed, could also be altered on "save" ...
+
 
     def OnUndo(self,e):
         # Undo last point or circle
@@ -760,13 +782,25 @@ class App(wx.App):
 
     def OnInit(self):
         'Create the main window and insert the custom frame'
+##Splash Screen
+#        splashImage = nsc_bmp.getNscBmp()
+#        wx.SplashScreen(splashImage, wx.SPLASH_CENTRE_ON_SCREEN|wx.SPLASH_TIMEOUT, 1000, None, wx.ID_ANY)
+#        wx.Yield()
+#Main Window
         global frame
-        frame = diffaction_int()
+        fileOpen = sys.argv[1:]
+        frame = diffaction_int(fileOpen)
         frame.Show(True)
-
         return True
-
         
-app = App(0)
-app.MainLoop()
+    
+def main():
+    app = App(redirect=False)
+    app.MainLoop()
+    return True
+
+if __name__ == '__main__':
+    main()        
+#app = App(0)
+#app.MainLoop()
 
