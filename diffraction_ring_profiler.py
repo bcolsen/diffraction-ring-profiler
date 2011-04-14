@@ -500,9 +500,10 @@ class diffaction_int(wx.Frame):
         
         self.canvas.mpl_disconnect(cid)
         
+        self.dirname, self.filename = os.path.split( self.filename )
         name, ext = os.path.splitext( self.filename )            
         #print count, centers, circle
-        print ext
+        print ext, name, self.dirname
         
         if ext=='.dm3' or ext=='.DM3':
             imageData, pattern_open = getDM3FileInfo(os.path.join(self.dirname, self.filename), return_array=True)
