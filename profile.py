@@ -233,7 +233,11 @@ class radial(wx.Frame):
     def __init__(self, parent, pattern_open, circles, imgcal, wavelen, camlen, size):
         wx.Frame.__init__(self,parent,-1,
             "Intensity Profile - "+parent.filename ,size=(550,350))
+                
+        iconFile = "diff_profiler_ico.ico"
+        icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
         
+        self.SetIcon(icon1)
         self.simulations = []
         self.plot_sim = 0
         

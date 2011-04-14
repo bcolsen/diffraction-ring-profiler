@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This program will measure electron diffration rings
+This program will measure electron diffraction rings
 and extract intensity profiles from the diffraction pattern.
 This program averages the centers of the rings you mark to find the center of the pattern.
 """
@@ -65,7 +65,7 @@ imgcal = 278.1
 img_con = 0.05
 img_con16 = 0.0001
 
-print "Welcome to Diffraction Ring Profiler. This program will measure electron diffration rings"
+print "Welcome to Diffraction Ring Profiler. This program will measure electron diffraction rings"
 print " and extract intensity profiles from the diffraction pattern."
 print "This program averages the centers of the rings you mark to find the center of the pattern."
 
@@ -435,14 +435,26 @@ class diffaction_int(wx.Frame):
         event.Skip()
 
     def OnAbout(self,e):
-        # A modal show will lock out the other windows until it has
-        # been dealt with. Very useful in some programming tasks to
-        # ensure that things happen in an order that  the programmer
-        # expects, but can be very frustrating to the user if it is
-        # used to excess!
-        self.aboutme = wx.MessageDialog( self, " This program is for extracting intensity\n"
-                    " profiles from diffraction ring patterns","About Diffraction Ring Profiler", wx.OK)            
-        self.aboutme.ShowModal() # Shows it
+
+        info = wx.AboutDialogInfo()
+        info.Name = "Diffraction Ring Profiler"
+        info.Version = "1.2"
+        info.Copyright = "(C) 2011 Brian Olsen"
+        info.Description = "This program is for extracting intensity\n profiles from diffraction ring patterns\n\n"
+        info.WebSite = ("http://code.google.com/p/diffraction-ring-profiler/", "Diffraction Ring Profiler Website")
+        info.Developers = [ "Brian Olsen"]
+
+        # change the wx.ClientDC to use self.panel instead of self
+        info.License = 'Licensed under GPL 3.0'
+
+        # Then we call wx.AboutBox giving it that info object
+        wx.AboutBox(info)
+
+#        self.aboutme = wx.MessageDialog( self, "This program is for extracting intensity\n"
+#                    " profiles from diffraction ring patterns\n\n" "Diffraction Ring Profiler 1.2\n\n" 
+#                    "(c) Brian Olsen, Licensed under GPL 3.0\n\n" "http://code.google.com/p/diffraction-ring-profiler/",
+#                    "About Diffraction Ring Profiler", wx.OK)            
+#        self.aboutme.ShowModal() # Shows it
         # widget / frame defined earlier so it can come up fast when needed
 
     def OnExit(self,e):
