@@ -499,8 +499,8 @@ class diffaction_int(wx.Frame):
         point3 = array([])
         
         self.canvas.mpl_disconnect(cid)
-        
-        self.dirname, self.filename = os.path.split( self.filename )
+        if self.dirname == '':
+            self.dirname, self.filename = os.path.split( self.filename )
         name, ext = os.path.splitext( self.filename )            
         #print count, centers, circle
         print ext, name, self.dirname

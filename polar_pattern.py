@@ -90,8 +90,8 @@ def reproject_image_into_polar(data, origin, boxs):
     zi = sp.ndimage.map_coordinates(band, coords, order=1)
     bands = (zi.reshape((nx, ny)))
     output = bands
-    pmrdf, psrdf= polar_mean(output)
-    return output[:,-boxs/2-boxs/3:-boxs/2+boxs/8], r_i, theta_i, pmrdf, psrdf  #[:,-boxs/2-boxs/2.5:-boxs/2+boxs/2.5]
+    pmrdf, psrdf, prrdf= polar_mean(output)
+    return output[:,-boxs/2-boxs/3:-boxs/2+boxs/8], r_i, theta_i, pmrdf, psrdf, prrdf #[:,-boxs/2-boxs/2.5:-boxs/2+boxs/2.5]
 
 def index_coords(data, origin):
     """Creates x & y coords for the indicies in a numpy array "data".
@@ -137,5 +137,8 @@ def polar_mean(output):
     ptv = array(ptv)
     ptv[ptv==0]=1
     #print len(ptv),ptv
-    return out_mean, output.sum(axis=1)/ptv
+    
+    out_median = median(output, axis=1)
+    
+    return out_mean, output.sum(axis=1)/ptv, out_median
 

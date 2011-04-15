@@ -51,6 +51,7 @@ ID_SIML=116
 ID_PPREF=117
 ID_CLRS=118
 ID_BSC=119
+ID_RSP=120
 
 global radframe
 global centers
@@ -292,6 +293,7 @@ class radial(wx.Frame):
         toolsmenu.Append(ID_RECEN, "&Recenter(Sharpen Peaks)"," Sharpen profile peaks by recentering")
         toolsmenu.Append(ID_POL, "&Polar Pattern"," Display polar pattern to compare with the profile")        
         toolsmenu.Append(ID_BSC, "Beam Stop &Correction"," Use the polar pattern to correct for a beam stopper")
+        toolsmenu.Append(ID_RSP, "Remove &Spots","Removes a spot pattern from the profile")
         # Creating the menubar.
         menuBar = wx.MenuBar()
         menuBar.Append(intmenu,"&Profile") # Adding the "patternmenu" to the MenuBar
@@ -344,7 +346,8 @@ class radial(wx.Frame):
         wx.EVT_MENU(self, ID_SIML, self.OnSimLabel)
         wx.EVT_MENU(self, ID_PPREF, self.OnPro_Pref)
         wx.EVT_MENU(self, ID_CLRS, self.OnClearSim)        
-        wx.EVT_MENU(self, ID_BSC, self.OnBeamStop)                    
+        wx.EVT_MENU(self, ID_BSC, self.OnBeamStop)
+        wx.EVT_MENU(self, ID_RSP, self.OnRemoveSpots)
         self.SetSizer(self.sizer)
         self.Fit()
 
@@ -774,7 +777,7 @@ class radial(wx.Frame):
         #plot_polar_pattern(self.pattern_open, self.C, self.boxs, self.rdf, self.drdf)
         origin =  [self.C[1], self.C[0]]
     
-        polar_grid, r, theta, pmrdf, self.psrdf = reproject_image_into_polar(self.pattern_open, origin, self.boxs)
+        polar_grid, r, theta, pmrdf, self.psrdf, self.prrdf = reproject_image_into_polar(self.pattern_open, origin, self.boxs)
         self.plot_polar = 1
         
         self.polar_grid = polar_grid
@@ -824,6 +827,20 @@ class radial(wx.Frame):
         self.drdfb += [self.drdf.copy()]        
         
         self.plot(2,'g')
+        
+        self.axes.figure.canvas.draw()
+                
+                
+    def OnRemoveSpots(self,e):
+        if not self.plot_polar:
+            self.OnPolar(e)
+        self.rdf = self.prrdf
+        self.drdf = self.dpmrdf
+        
+        self.rdfb += [self.rdf.copy()]
+        self.drdfb += [self.drdf.copy()]        
+        
+        self.plot(2,'k')
         
         self.axes.figure.canvas.draw()
                 
