@@ -86,7 +86,9 @@ cid = 0
 count = 0
 circles = []
 point3 = array([])
-
+point2 = array([])
+lines = []
+hist = ['start']
 
 def onclick(event):
     #print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
@@ -94,6 +96,7 @@ def onclick(event):
     global cid
     global circles
     global point3
+    global hist
     
     print point3.size
     if event.xdata != None and event.ydata != None:
@@ -108,9 +111,13 @@ def onclick(event):
         point_mark = axi.plot(event.xdata, event.ydata, 'b+')
         #axi.set_ylim(0, size[0])
         axi.figure.canvas.draw()
+        
+        hist += ['point3']
 
     if point3.size >= 6:
         circle = Circ(point3, axi)
+        
+        hist += ['circ']
         
         if not len(circles): circles = [circle]
         else: circles += [circle]
@@ -165,11 +172,86 @@ class Circ:
         #axi.add_patch(tri)
         axi.add_patch(circ_mark)
         axi.set_autoscale_on(False)
+
+def onclickspot(event):
+    #print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
+    #    event.button, event.x, event.y, event.xdata, event.ydata)
+    #global cid
+    global lines
+    global point2
+    global hist
     
+    print point2.size
+    if event.xdata != None and event.ydata != None:
+        if not point2.size: point2 = array([event.xdata,event.ydata])
+        else: point2 = vstack((point2, array([event.xdata,event.ydata])))
+    
+        print point2, point2.size
+    
+        axi = frame.canvas.figure.axes[0]
+    
+        axi.set_autoscale_on(False)
+        point_mark = axi.plot(event.xdata, event.ydata, 'r+')
+        #axi.set_ylim(0, size[0])
+        axi.figure.canvas.draw()
+        
+        hist += ['point2']
+
+    if point2.size >= 4:
+        line = Line(point2, axi)
+        
+        hist += ['line']
+        
+        if not len(lines): lines = [line]
+        else: lines += [line]
+        
+        #axi.set_ylim(0, size[0])    
+        axi.figure.canvas.draw()
+        #frame.canvas.mpl_disconnect(cid)
+        #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+        point2 = array([])
+        
+        #print "Press 'm' to mark more rings or 'enter' to integrate the pattern."
+
+class Line:
+    """
+    Lines for marking spots
+    """
+    def __init__(self, point2, axi):
+        self.point2 = point2[:]
+        ax, ay = self.point2[0,:]
+        bx, by = self.point2[1,:]
+        
+        self.linelen = sqrt((ax - bx)**2 + (ay - by)**2)
+        print 'line length=%f'%(self.linelen)
+        
+        self.mark_line(axi)
+        
+        self.label_line(axi)
+        
+    def label_line(self, axi):
+        print (imgcal / 2.54) * 100, wavelen, float(camlen) / 100
+
+        self.dspace = ((imgcal / 2.54) * 100) * wavelen * (float(camlen) / 100) / self.linelen
+        
+        print self.dspace
+        self.dspacestr = ur'%.2f \u00c5' % (self.dspace * 10**10)
+        
+        bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.5)
+        axi.text(self.point2[0,0], self.point2[0,1], self.dspacestr, ha="center", va="center", size=10,
+            bbox=bbox_props)
+            
+    def mark_line(self, axi):
+        line_mark = patches.Polygon(self.point2, color='yellow', linewidth = 1, alpha=0.5)
+        axi.add_patch(line_mark)
+        axi.set_autoscale_on(False)
+
+
 class MyNavigationToolbar(NavigationToolbar2WxAgg):
     """
     Extend the default wx toolbar with mark_rings, profile, and undo
     """
+    ON_MARKSPOTS = wx.NewId()
     ON_MARKRINGS = wx.NewId()
     ON_INTEGRATE = wx.NewId()
     ON_UNDO = wx.NewId()
@@ -181,11 +263,12 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         self.OnUndo = OnUndo
         self.parent = parent
         
-        # for simplicity I'm going to reuse a bitmap from wx, you'll
-        # probably want to add your own.
         self.AddCheckTool(self.ON_MARKRINGS, _load_bitmap('hand.png'),
                     shortHelp= 'Mark Rings',longHelp= "mark 3-points on a ring to find center")
         wx.EVT_TOOL(self, self.ON_MARKRINGS, self._on_markrings)
+        self.AddCheckTool(self.ON_MARKSPOTS, _load_bitmap('stock_right.xpm'),
+                    shortHelp= 'Mark Spots',longHelp= "mark 2 spots to measure distance")
+        wx.EVT_TOOL(self, self.ON_MARKSPOTS, self._on_markspots)
         self.AddSimpleTool(self.ON_INTEGRATE, _load_bitmap('stock_up.xpm'),
                         'Profile', 'Extract profiles from the diffraction pattern')
         wx.EVT_TOOL(self, self.ON_INTEGRATE, self._on_integrate)
@@ -196,11 +279,13 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
     def zoom(self, *args):
         self.ToggleTool(self._NTB2_PAN, False)
         self.ToggleTool(self.ON_MARKRINGS, False)
+        self.ToggleTool(self.ON_MARKSPOTS, False)
         NavigationToolbar2WxAgg.zoom(self, *args)
 
     def pan(self, *args):
         self.ToggleTool(self._NTB2_ZOOM, False)
         self.ToggleTool(self.ON_MARKRINGS, False)
+        self.ToggleTool(self.ON_MARKSPOTS, False)
         NavigationToolbar2WxAgg.pan(self, *args)
             
     def _on_markrings(self, evt):
@@ -208,9 +293,10 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         global onclick
         self.ToggleTool(self._NTB2_ZOOM, False)
         self.ToggleTool(self._NTB2_PAN, False)
+        self.ToggleTool(self.ON_MARKSPOTS, False)
         #frame.canvas.mpl_disconnect(cid)
         print 'Select 3 points on a ring to mark it'
-        print self._active
+        #print self._active
         
         #cid = frame.canvas.mpl_connect('button_press_event', onclick)
         #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_BULLSEYE))
@@ -230,6 +316,43 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
             self._idPress = self.canvas.mpl_connect(
                 'button_press_event', onclick)
             self.mode = 'mark circles'
+            self.canvas.widgetlock(self)
+        else:
+            self.canvas.widgetlock.release(self)
+
+        for a in self.canvas.figure.get_axes():
+            a.set_navigate_mode(self._active)
+
+            self.set_message(self.mode)
+
+    def _on_markspots(self, evt):
+        global cid
+        global onclickspot
+        self.ToggleTool(self._NTB2_ZOOM, False)
+        self.ToggleTool(self._NTB2_PAN, False)
+        self.ToggleTool(self.ON_MARKRINGS, False)
+        #frame.canvas.mpl_disconnect(cid)
+        print 'Select 2 spots to measure the distance'
+        #print self._active
+        
+        #cid = frame.canvas.mpl_connect('button_press_event', onclick)
+        #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_BULLSEYE))
+        
+        # set the pointer icon and button press funcs to the
+        # appropriate callbacks
+
+        if self._active == 'SPOT':
+            self._active = None
+        else:
+            self._active = 'SPOT'
+        if self._idPress is not None:
+            self._idPress = self.canvas.mpl_disconnect(self._idPress)
+            self.mode = ''
+
+        if self._active:
+            self._idPress = self.canvas.mpl_connect(
+                'button_press_event', onclickspot)
+            self.mode = 'mark spots'
             self.canvas.widgetlock(self)
         else:
             self.canvas.widgetlock.release(self)
@@ -272,6 +395,12 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
                 self._lastCursor = cursors.MOVE
 
             elif (self._active=='MARK' and 
+                    self._lastCursor != cursors.BULLSEYE):
+                self.set_cursor(cursors.BULLSEYE)
+
+                self._lastCursor = cursors.BULLSEYE    
+                
+            elif (self._active=='SPOT' and 
                     self._lastCursor != cursors.BULLSEYE):
                 self.set_cursor(cursors.BULLSEYE)
 
@@ -352,7 +481,7 @@ class diffaction_int(wx.Frame):
         # The & character indicates the short cut key
         toolsmenu.Append(ID_CAL, "&Calibrate"," Calibrate image resolution using marked rings and known d-spacing")
         toolsmenu.AppendSeparator()
-        toolsmenu.Append(ID_MARK, "&Mark Rings"," Mark diffraction rings to find the pattern center")
+        #toolsmenu.Append(ID_MARK, "&Mark Rings"," Mark diffraction rings to find the pattern center")
         toolsmenu.Append(ID_INT, "&Profile"," Extract profiles from the diffraction pattern")
                     
         # Setting up the menu. filemenu is a local variable at this stage.
@@ -416,7 +545,7 @@ class diffaction_int(wx.Frame):
         wx.EVT_MENU(self, ID_ABOUT, self.OnAbout)
         wx.EVT_MENU(self, ID_EXIT, self.OnExit)
         wx.EVT_MENU(self, ID_OPEN, self.OnOpen)
-        wx.EVT_MENU(self, ID_MARK, self.toolbar._on_markrings)    
+        #wx.EVT_MENU(self, ID_MARK, self.toolbar._on_markrings)    
         wx.EVT_MENU(self, ID_INT, self.toolbar._on_integrate)
         wx.EVT_MENU(self, ID_UNDO, self.OnUndo)
         wx.EVT_MENU(self, ID_PREF, self.OnPref)
@@ -571,35 +700,57 @@ class diffaction_int(wx.Frame):
 
     def OnUndo(self,e):
         # Undo last point or circle
+        
         global point3
+        global point2
         global circles
-        global cid
         global axi
+        global hist
 
         print point3.size
         print self.axes.lines
+        print hist
+        
+        undo = hist[-1]
 
-        if point3.size == 0 and len(circles) == 0 and cid:
-            self.canvas.mpl_disconnect(cid)
-        elif point3.size == 0 and len(circles) != 0:
+        if undo == 'start':
+            print 'back to start'
+        elif undo == 'circ':
             circles.pop(-1)
             for circle in circles:print circle.radius
             self.axes.patches.pop(-1)
             self.axes.texts.pop(-1)
             del self.axes.lines[-4:]
-            print self.axes.lines
+            del hist[-4:]
+            print hist
             self.canvas.draw()
-        elif point3.size == 2:
+        elif undo == 'point3' and point3.size == 2:
             point3 = array([])
             print point3
             self.axes.lines.pop(-1)
             self.canvas.draw()
-            self.canvas.mpl_disconnect(cid)
-        else:
+            del hist[-1:]
+        elif undo == 'point3':
             point3 = point3[:-1,:]
             print point3
             self.axes.lines.pop(-1)
-            self.canvas.draw()    
+            self.canvas.draw()
+            del hist[-1:]
+        elif undo == 'line':
+            self.axes.patches.pop(-1)
+            self.axes.texts.pop(-1)
+            del self.axes.lines[-2:]
+            del hist[-3:]
+            print hist
+            self.canvas.draw()
+        elif undo == 'point2':
+            point2 = array([])
+            print point2
+            self.axes.lines.pop(-1)
+            self.canvas.draw()
+            del hist[-1:]
+        else:
+            print 'undo error'
         
     def OnPref(self,e):
         dlg = Pref(self, -1, 'Preferences')
