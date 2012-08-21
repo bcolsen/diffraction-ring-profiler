@@ -31,11 +31,11 @@ from matplotlib.pyplot import *
 import matplotlib.patches as patches
 import matplotlib.image as mpimg
 
-from profile import *
+import profile
 
 from matplotlib import rc
 
-from dm3reader import getDM3FileInfo
+import dm3lib_v099 as dm3
 
 import sys
 
@@ -56,15 +56,6 @@ rc("xtick", direction="out")
 rc("ytick", direction="out")
 rc("lines", markeredgewidth=1)
 
-pattern = mpimg.imread('diff_profile_text.png')
-pattern_open = array([])
-size = pattern.shape
-camlen = 100
-accv = 200
-imgcal = 278.1
-img_con = 0.05
-img_con16 = 0.0001
-
 print "Welcome to Diffraction Ring Profiler. This program will measure electron diffraction rings"
 print " and extract intensity profiles from the diffraction pattern."
 print "This program averages the centers of the rings you mark to find the center of the pattern."
@@ -79,63 +70,15 @@ ID_PREF=109
 ID_CAL=110
 ID_EXIT=200
 
-accvm = 200 * 1000
-wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2))) 
-
-cid = 0
-count = 0
-circles = []
-point3 = array([])
-point2 = array([])
-lines = []
-hist = ['start']
-
-def onclick(event):
-    #print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-    #    event.button, event.x, event.y, event.xdata, event.ydata)
-    global cid
-    global circles
-    global point3
-    global hist
-    
-    print point3.size
-    if event.xdata != None and event.ydata != None:
-        if not point3.size: point3 = array([event.xdata,event.ydata])
-        else: point3 = vstack((point3, array([event.xdata,event.ydata])))
-    
-        print point3, point3.size
-    
-        axi = frame.canvas.figure.axes[0]
-    
-        axi.set_autoscale_on(False)
-        point_mark = axi.plot(event.xdata, event.ydata, 'b+')
-        #axi.set_ylim(0, size[0])
-        axi.figure.canvas.draw()
-        
-        hist += ['point3']
-
-    if point3.size >= 6:
-        circle = Circ(point3, axi)
-        
-        hist += ['circ']
-        
-        if not len(circles): circles = [circle]
-        else: circles += [circle]
-        
-        #axi.set_ylim(0, size[0])    
-        axi.figure.canvas.draw()
-        #frame.canvas.mpl_disconnect(cid)
-        #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
-        point3 = array([])
-        
-        #print "Press 'm' to mark more rings or 'enter' to integrate the pattern."
 
 
 class Circ:
     """
     Circles for ring markers
     """
-    def __init__(self, point3, axi):
+    def __init__(self, parent, point3, axi):
+        self.parent = parent
+        
         self.point3 = point3[:]
         ax, ay = self.point3[0,:]
         bx, by = self.point3[1,:]
@@ -154,9 +97,9 @@ class Circ:
         self.label_circle(axi)
         
     def label_circle(self, axi):
-        print (imgcal / 2.54) * 100, wavelen, float(camlen) / 100
+        print (self.parent.imgcal / 2.54) * 100, self.parent.wavelen, float(self.parent.camlen) / 100
 
-        self.dspace = ((imgcal / 2.54) * 100) * wavelen * (float(camlen) / 100) / self.radius
+        self.dspace = ((self.parent.imgcal / 2.54) * 100) * self.parent.wavelen * (float(self.parent.camlen) / 100) / self.radius
         
         print self.dspace
         self.dspacestr = ur'%.2f \u00c5' % (self.dspace * 10**10)
@@ -173,51 +116,13 @@ class Circ:
         axi.add_patch(circ_mark)
         axi.set_autoscale_on(False)
 
-def onclickspot(event):
-    #print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-    #    event.button, event.x, event.y, event.xdata, event.ydata)
-    #global cid
-    global lines
-    global point2
-    global hist
-    
-    print point2.size
-    if event.xdata != None and event.ydata != None:
-        if not point2.size: point2 = array([event.xdata,event.ydata])
-        else: point2 = vstack((point2, array([event.xdata,event.ydata])))
-    
-        print point2, point2.size
-    
-        axi = frame.canvas.figure.axes[0]
-    
-        axi.set_autoscale_on(False)
-        point_mark = axi.plot(event.xdata, event.ydata, 'r+')
-        #axi.set_ylim(0, size[0])
-        axi.figure.canvas.draw()
-        
-        hist += ['point2']
-
-    if point2.size >= 4:
-        line = Line(point2, axi)
-        
-        hist += ['line']
-        
-        if not len(lines): lines = [line]
-        else: lines += [line]
-        
-        #axi.set_ylim(0, size[0])    
-        axi.figure.canvas.draw()
-        #frame.canvas.mpl_disconnect(cid)
-        #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
-        point2 = array([])
-        
-        #print "Press 'm' to mark more rings or 'enter' to integrate the pattern."
-
 class Line:
     """
     Lines for marking spots
     """
-    def __init__(self, point2, axi):
+    def __init__(self, parent, point2, axi):
+        self.parent = parent
+        
         self.point2 = point2[:]
         ax, ay = self.point2[0,:]
         bx, by = self.point2[1,:]
@@ -230,9 +135,9 @@ class Line:
         self.label_line(axi)
         
     def label_line(self, axi):
-        print (imgcal / 2.54) * 100, wavelen, float(camlen) / 100
+        print (self.parent.imgcal / 2.54) * 100, self.parent.wavelen, float(self.parent.camlen) / 100
 
-        self.dspace = ((imgcal / 2.54) * 100) * wavelen * (float(camlen) / 100) / self.linelen
+        self.dspace = ((self.parent.imgcal / 2.54) * 100) * self.parent.wavelen * (float(self.parent.camlen) / 100) / self.linelen
         
         print self.dspace
         self.dspacestr = ur'%.2f \u00c5' % (self.dspace * 10**10)
@@ -246,7 +151,94 @@ class Line:
         axi.add_patch(line_mark)
         axi.set_autoscale_on(False)
 
+class Param:
+    """
+    The idea of the "Param" class is that some parameter in the GUI may have
+    several knobs that both control it and reflect the parameter's state, e.g.
+    a slider, text, and dragging can all change the value of the frequency in
+    the waveform of this example.  
+    The class allows a cleaner way to update/"feedback" to the other knobs when 
+    one is being changed.  Also, this class handles min/max constraints for all
+    the knobs.
+    Idea - knob list - in "set" method, knob object is passed as well
+      - the other knobs in the knob list have a "set" method which gets
+        called for the others.
+    """
+    def __init__(self, initialValue=None, minimum=0., maximum=1.):
+        self.minimum = minimum
+        self.maximum = maximum
+        if initialValue != self.constrain(initialValue):
+            raise ValueError('illegal initial value')
+        self.value = initialValue
+        self.knobs = []
+        
+    def attach(self, knob):
+        self.knobs += [knob]
+        
+    def set(self, value, knob=None):
+        self.value = value
+        self.value = self.constrain(value)
+        for feedbackKnob in self.knobs:
+            if feedbackKnob != knob:
+                feedbackKnob.setKnob(self.value)
+        return self.value
 
+    def constrain(self, value):
+        if value <= self.minimum:
+            value = self.minimum
+        if value >= self.maximum:
+            value = self.maximum
+        return value
+
+class SliderGroup:
+    def __init__(self, parent, label, param):
+        self.parent = parent
+        self.sliderLabel = wx.StaticText(parent, label=label)
+        self.sliderText = wx.TextCtrl(parent, -1, style=wx.TE_PROCESS_ENTER)
+        self.slider = wx.Slider(parent, -1, style=wx.SL_AUTOTICKS)
+        self.slider.SetMax(param.maximum*1000)
+        self.slider.SetTick(1000)
+        #self.slider.SetTickFreq(100, 1)
+        self.setKnob(param.value)
+        
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(self.sliderLabel, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=2)
+        sizer.Add(self.sliderText, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=2)
+        sizer.Add(self.slider, 1, wx.EXPAND)
+        self.sizer = sizer
+
+        self.slider.Bind(wx.EVT_SLIDER, self.sliderHandler)
+        self.sliderText.Bind(wx.EVT_TEXT_ENTER, self.sliderTextHandler)
+
+        self.param = param
+        self.param.attach(self)
+
+    def sliderHandler(self, evt):
+        value = evt.GetInt() / 1000.
+        self.param.set(value)
+        
+    def sliderTextHandler(self, evt):
+        value = float(self.sliderText.GetValue())
+        self.param.set(value)
+
+    def repaint(self):
+        self.parent.canvas.draw()
+
+    def setKnob(self, value):
+        if self.parent.pattern_open.any():
+            pattern = self.parent.pattern_open
+        elif self.parent.pattern.any():
+            pattern = self.parent.pattern
+            
+        self.sliderText.SetValue('%g'%value)
+        self.slider.SetValue(value*1000)
+        #print value, self.parent.img_con.value
+        gamma_pattern =  (pattern-pattern.min())**self.parent.img_con.value   #log(1+self.parent.img_con.value*pattern)
+        #print pattern.max(), pattern.min()
+        #print gamma_pattern.max(), gamma_pattern.min()
+        self.parent.img.set_data(gamma_pattern)
+        self.repaint()
+            
 class MyNavigationToolbar(NavigationToolbar2WxAgg):
     """
     Extend the default wx toolbar with mark_rings, profile, and undo
@@ -256,6 +248,15 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
     ON_INTEGRATE = wx.NewId()
     ON_UNDO = wx.NewId()
     def __init__(self, parent, canvas, cankill, OnUndo):
+        
+        self.cid = 0
+        self.circles = []
+        self.point3 = array([])
+        self.point2 = array([])
+        self.lines = []
+        self.hist = ['start']
+        
+        
         NavigationToolbar2WxAgg.__init__(self, canvas)
         
         self.statbar = None
@@ -289,8 +290,6 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         NavigationToolbar2WxAgg.pan(self, *args)
             
     def _on_markrings(self, evt):
-        global cid
-        global onclick
         self.ToggleTool(self._NTB2_ZOOM, False)
         self.ToggleTool(self._NTB2_PAN, False)
         self.ToggleTool(self.ON_MARKSPOTS, False)
@@ -314,7 +313,7 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
 
         if self._active:
             self._idPress = self.canvas.mpl_connect(
-                'button_press_event', onclick)
+                'button_press_event', self.onclick)
             self.mode = 'mark circles'
             self.canvas.widgetlock(self)
         else:
@@ -326,17 +325,12 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
             self.set_message(self.mode)
 
     def _on_markspots(self, evt):
-        global cid
-        global onclickspot
         self.ToggleTool(self._NTB2_ZOOM, False)
         self.ToggleTool(self._NTB2_PAN, False)
         self.ToggleTool(self.ON_MARKRINGS, False)
-        #frame.canvas.mpl_disconnect(cid)
+
         print 'Select 2 spots to measure the distance'
         #print self._active
-        
-        #cid = frame.canvas.mpl_connect('button_press_event', onclick)
-        #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_BULLSEYE))
         
         # set the pointer icon and button press funcs to the
         # appropriate callbacks
@@ -351,7 +345,7 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
 
         if self._active:
             self._idPress = self.canvas.mpl_connect(
-                'button_press_event', onclickspot)
+                'button_press_event', self.onclickspot)
             self.mode = 'mark spots'
             self.canvas.widgetlock(self)
         else:
@@ -363,15 +357,81 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
             self.set_message(self.mode)
 
     def _on_integrate(self, evt):
-        global integrate
-        global centers
         print self.parent
-        #print centers.size
-        integrate(self.parent, pattern_open, circles, imgcal, wavelen, camlen, size)
+        profile.integrate(self.parent, self.parent.pattern_open, self.circles, self.parent.imgcal, self.parent.wavelen, self.parent.camlen, self.parent.size)
         
     def _on_undo(self, evt):
         self.OnUndo(evt)
         
+    def onclickspot(self, event):
+        print self.point2.size
+        if event.xdata != None and event.ydata != None:
+            if not self.point2.size: self.point2 = array([event.xdata,event.ydata])
+            else: self.point2 = vstack((self.point2, array([event.xdata,event.ydata])))
+        
+            print self.point2, self.point2.size
+        
+            axi = self.parent.canvas.figure.axes[0]
+        
+            axi.set_autoscale_on(False)
+            point_mark = axi.plot(event.xdata, event.ydata, 'r+')
+            #axi.set_ylim(0, size[0])
+            axi.figure.canvas.draw()
+            
+            self.hist += ['point2']
+
+        if self.point2.size >= 4:
+            line = Line(self.parent, self.point2, axi)
+            
+            self.hist += ['line']
+            
+            if not len(self.lines): self.lines = [line]
+            else: self.lines += [line]
+            
+            #axi.set_ylim(0, size[0])    
+            axi.figure.canvas.draw()
+            #frame.canvas.mpl_disconnect(cid)
+            #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+            self.point2 = array([])
+            
+            #print "Press 'm' to mark more rings or 'enter' to integrate the pattern."
+            
+    def onclick(self, event):
+        #print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
+        #    event.button, event.x, event.y, event.xdata, event.ydata)
+        
+        print self.point3.size
+        if event.xdata != None and event.ydata != None:
+            if not self.point3.size: self.point3 = array([event.xdata,event.ydata])
+            else: self.point3 = vstack((self.point3, array([event.xdata,event.ydata])))
+        
+            print self.point3, self.point3.size
+        
+            axi = self.parent.canvas.figure.axes[0]
+        
+            axi.set_autoscale_on(False)
+            point_mark = axi.plot(event.xdata, event.ydata, 'b+')
+            #axi.set_ylim(0, size[0])
+            axi.figure.canvas.draw()
+            
+            self.hist += ['point3']
+
+        if self.point3.size >= 6:
+            circle = Circ(self.parent, self.point3, axi)
+            
+            self.hist += ['circ']
+            
+            if not len(self.circles): self.circles = [circle]
+            else: self.circles += [circle]
+            
+            #axi.set_ylim(0, size[0])    
+            axi.figure.canvas.draw()
+            #frame.canvas.mpl_disconnect(cid)
+            #frame.canvas.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+            self.point3 = array([])
+            
+            #print "Press 'm' to mark more rings or 'enter' to integrate the pattern."
+            
     def mouse_move(self, event):
         #print 'mouse_move', event.button
 
@@ -441,6 +501,25 @@ print cursord
 class diffaction_int(wx.Frame):
 
     def __init__(self, filename = None):
+        
+        im = Image.open('diff_profile_text.png')
+        im = im.convert('L')
+        x_str = im.tostring('raw',im.mode,0,1)
+        self.pattern = fromstring(x_str,uint8)
+        self.pattern.shape = im.size[1], im.size[0]
+        
+        self.pattern_open = array([])
+        self.size = self.pattern.shape
+        self.camlen = 100
+        self.accv = 200
+        self.imgcal = 244
+        #self.img_con = 0.05
+        #self.img_con16 = 0.0001
+        self.img_con = Param(1, minimum=0.01, maximum=1.9)
+        accvm = self.accv * 1000
+        self.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2))) 
+        
+        
         wx.Frame.__init__(self,None,-1,
             'Diffraction Ring Profiler',size=(550,350))
         
@@ -499,15 +578,15 @@ class diffaction_int(wx.Frame):
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
         # Note - previous line stores the whole of the menu into the current object
 
-        self.SetBackgroundColour(wx.NamedColor("WHITE"))
+        #self.SetBackgroundColour(wx.NamedColor("WHITE"))
 
         self.figure = Figure(figsize=(8,8), dpi=76)
         self.axes = self.figure.add_subplot(111)
         self.axes.set_aspect(1)
         
-        #log_pattern = log(1+a*pattern)#/log(1+a*pattern).max()*255
+        #log_pattern = log(1+a*self.pattern)#/log(1+a*self.pattern).max()*255
         
-        self.axes.imshow(pattern, cmap='gray', aspect='equal')
+        self.img = self.axes.imshow(self.pattern, cmap='gray', aspect='equal')
         #axi.set_xlim(0, size[1])
         #axi.set_ylim(0, size[0])
         #canvas = axi.figure.canvas
@@ -540,6 +619,9 @@ class diffaction_int(wx.Frame):
             self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
         # update the axes menu on the toolbar
         self.toolbar.update()        
+        
+        self.img_conSliderGroup = SliderGroup(self, label='Image gamma:', param=self.img_con)
+        self.sizer.Add(self.img_conSliderGroup.sizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
         
         # Define the code to be run when a menu option is selected
         wx.EVT_MENU(self, ID_ABOUT, self.OnAbout)
@@ -612,39 +694,29 @@ class diffaction_int(wx.Frame):
         
     def openimage(self):
     
-        global circles
-        global pattern_open
-        global size
-        global point3
-        global count
-        global cid
-        global camlen
-        global wavelen
-        global imgcal
-        global accv
+        self.toolbar.circles = []
+        self.toolbar.point3 = array([])
         
-        count = 0
-        circles = []
-        point3 = array([])
-        
-        self.canvas.mpl_disconnect(cid)
+        self.canvas.mpl_disconnect(self.toolbar.cid)
         if self.dirname == '':
             self.dirname, self.filename = os.path.split( self.filename )
         name, ext = os.path.splitext( self.filename )            
-        #print count, centers, circle
         print ext, name, self.dirname
         
         if ext=='.dm3' or ext=='.DM3':
-            imageData, pattern_open = getDM3FileInfo(os.path.join(self.dirname, self.filename), return_array=True)
-            pattern_open = array(pattern_open)
-            pattern_open.shape = int(imageData['y_res']), int(imageData['x_res'])
-            #print pattern_open[[182],[1336]]
-            a = img_con16
+            dm3f = dm3.DM3(os.path.join(self.dirname, self.filename))
+            imageData = dm3f.getInfo()
+            print imageData, dm3f.pxsize
+            self.pattern_open = dm3f.getImageData()
+            #self.pattern_open = array(self.pattern_open)
+            self.pattern_open.shape
+            #print self.pattern_open[[182],[1336]]
+            a = self.img_con.value
             print imageData['mag'],imageData['hv']
-            accv = int(float(imageData['hv'])/1000.0)
+            self.accv = int(float(imageData['hv'])/1000.0)
             if imageData['mode'] == 'DIFFRACTION':
-                camlen = int(float(imageData['mag'])/10.0)
-            print camlen, accv
+                self.camlen = int(float(imageData['mag'])/10.0)
+            print self.camlen, self.accv
         else:
             im = Image.open(os.path.join(self.dirname, self.filename))
             Image._initialized=2
@@ -652,103 +724,95 @@ class diffaction_int(wx.Frame):
             if im.mode=='L':
                 # return MxN luminance array
                 x_str = im.tostring('raw',im.mode,0,1)
-                pattern_open = fromstring(x_str,uint8)
-                pattern_open.shape = im.size[1], im.size[0]
-                a = img_con
+                self.pattern_open = fromstring(x_str,uint8)
+                self.pattern_open.shape = im.size[1], im.size[0]
             elif im.mode=='I;16':
                 # return MxN luminance array
                 x_str = im.tostring('raw',im.mode,0,1)
-                pattern_open = fromstring(x_str,uint16)
-                pattern_open.shape = im.size[1], im.size[0]
-                a = img_con16
+                self.pattern_open = fromstring(x_str,uint16)
+                self.pattern_open.shape = im.size[1], im.size[0]
             else:
                 # return MxN luminance array
                 try:
                     im = im.convert('L')
                     x_str = im.tostring('raw',im.mode,0,1)
-                    pattern_open = fromstring(x_str,uint8)
-                    pattern_open.shape = im.size[1], im.size[0]
-                    a = img_con
+                    self.pattern_open = fromstring(x_str,uint8)
+                    self.pattern_open.shape = im.size[1], im.size[0]
                 except ValueError:
                     dlg.Destroy()
                     error_file = 'Image file must be grayscale.'
                     print error_file
-                    error_int_dlg = Error(frame, -1, 'Error', error_file)
+                    error_int_dlg = Error(self, -1, 'Error', error_file)
                     error_int_dlg.Show(True)
                     error_int_dlg.Centre()
                     self.axes.clear()
-                    self.axes.imshow(pattern, cmap='gray', aspect='equal')
+                    self.axes.imshow(self.pattern, cmap='gray', aspect='equal', origin='upper')
                     self.canvas.draw()
-                    pattern_open = array([])
+                    self.pattern_open = array([])
                     self.SetTitle("Diffraction Ring Profiler")
                     return
 
-        log_pattern = log(1+a*pattern_open)#/log(1+a*pattern).max()*255
-        size = pattern_open.shape
+        #log_pattern = log(1+a*self.pattern_open)#/log(1+a*pattern).max()*255
+        self.size = self.pattern_open.shape
+        print 'shape: ', self.size
                     
         self.axes.clear()
-        self.axes.imshow(log_pattern, cmap='gray', aspect='equal', origin='upper')
+        self.img = self.axes.imshow(self.pattern_open, cmap='gray', aspect='equal', origin='upper')
         self.axes.xaxis.set_ticks_position('bottom')
         self.axes.yaxis.set_ticks_position('left')
         self.canvas.draw()
         
-        # Report on name of latest file read
         self.SetTitle("Diffraction Ring Profiler - "+self.filename)
-        # Later - could be enhanced to include a "changed" flag whenever
-        # the text is actually changed, could also be altered on "save" ...
+        self.statbar.SetStatusText("CamL: {0} cm | AccV: {1} kV | Res: {2}".format(self.camlen, self.accv, self.imgcal), 0)
+        self.img_con.set(1)
+
 
 
     def OnUndo(self,e):
         # Undo last point or circle
         
-        global point3
-        global point2
-        global circles
-        global axi
-        global hist
-
-        print point3.size
+        print self.toolbar.point3.size
         print self.axes.lines
-        print hist
+        print self.toolbar.hist
         
-        undo = hist[-1]
+        undo = self.toolbar.hist[-1]
 
         if undo == 'start':
             print 'back to start'
         elif undo == 'circ':
-            circles.pop(-1)
-            for circle in circles:print circle.radius
+            self.toolbar.circles.pop(-1)
+            for circle in self.toolbar.circles:print circle.radius
             self.axes.patches.pop(-1)
             self.axes.texts.pop(-1)
             del self.axes.lines[-4:]
-            del hist[-4:]
-            print hist
+            del self.toolbar.hist[-4:]
+            print self.toolbar.hist
             self.canvas.draw()
-        elif undo == 'point3' and point3.size == 2:
-            point3 = array([])
-            print point3
+        elif undo == 'point3' and self.toolbar.point3.size == 2:
+            self.toolbar.point3 = array([])
+            print self.toolbar.point3
             self.axes.lines.pop(-1)
             self.canvas.draw()
-            del hist[-1:]
+            del self.toolbar.hist[-1:]
         elif undo == 'point3':
-            point3 = point3[:-1,:]
-            print point3
+            self.toolbar.point3 = self.toolbar.point3[:-1,:]
+            print self.toolbar.point3
             self.axes.lines.pop(-1)
             self.canvas.draw()
-            del hist[-1:]
+            del self.toolbar.hist[-1:]
         elif undo == 'line':
             self.axes.patches.pop(-1)
             self.axes.texts.pop(-1)
             del self.axes.lines[-2:]
-            del hist[-3:]
-            print hist
+            del self.toolbar.hist[-3:]
+            print self.toolbar.hist
             self.canvas.draw()
         elif undo == 'point2':
-            point2 = array([])
-            print point2
+            self.toolbar.point2 = array([])
+            print self.toolbar.point2
             self.axes.lines.pop(-1)
             self.canvas.draw()
-            del hist[-1:]
+            del self.toolbar.hist[-1:]
         else:
             print 'undo error'
         
@@ -771,10 +835,7 @@ class diffaction_int(wx.Frame):
 class Pref(wx.Dialog):
     def __init__(self, parent, id, title):
     
-        global camlen
-        global wavelen
-        global imgcal
-        global accv
+        self.parent = parent
         
         wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, 320))
         
@@ -782,20 +843,20 @@ class Pref(wx.Dialog):
         wx.StaticText(self, -1, 'Accelerating Voltage (kV): ', (20, 80))
         #wx.StaticText(self, -1, 'Wavelength (m): ', (20, 130))
         wx.StaticText(self, -1, 'Camera Length (cm): ', (20, 180))
-        wx.StaticText(self, -1, 'Resolution (dpi): ', (20, 230))    
+        wx.StaticText(self, -1, 'Resolution (PPI): ', (20, 230))    
         
         wavelen_btn = wx.Button(self, 3, 'Wavelength (m):', (20, 125))
         self.wavelen_text = wx.StaticText(self, -1, '', (200, 130))
         self.accv_sc = wx.SpinCtrl(self, -1, '',  (200, 75), (60, -1))
         self.accv_sc.SetRange(1, 500)
-        self.accv_sc.SetValue(accv)        
+        self.accv_sc.SetValue(self.parent.accv)        
 
         self.camlen_sc = wx.SpinCtrl(self, -1, '',  (200, 175), (60, -1))
         self.camlen_sc.SetRange(1, 5000)
-        self.camlen_sc.SetValue(camlen)
+        self.camlen_sc.SetValue(self.parent.camlen)
 
         self.imgcal_tc = wx.TextCtrl(self, -1, '',  (200, 225), (60, -1))
-        imagecal_text = '%.2f' % (imgcal)
+        imagecal_text = '%.2f' % (self.parent.imgcal)
         self.imgcal_tc.SetValue(imagecal_text)
     
         set_btn = wx.Button(self, 1, 'Set', (70, 275))
@@ -808,31 +869,33 @@ class Pref(wx.Dialog):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def OnWavelen(self, event):
-        accv = self.accv_sc.GetValue() * 1000
-        self.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accv)) * 1/(sqrt(1 + (con.e * accv)/(2 * con.m_e * con.c**2)))
-        wavelen_label = '%.3g m' % (self.wavelen)
-        print self.wavelen
+        self.parent.accv = self.accv_sc.GetValue() * 1000
+        self.parent.wavelen = con.h/(sqrt(2 * con.m_e * con.e * self.parent.accv)) * 1/(sqrt(1 + (con.e * self.parent.accv)/(2 * con.m_e * con.c**2)))
+        wavelen_label = '%.3g m' % (self.parent.wavelen)
+        print self.parent.wavelen
         self.wavelen_text.SetLabel(wavelen_label)
         
     def OnSet(self, event):
-        global camlen
-        global wavelen
-        global imgcal
-        global accv
         
-        camlen = self.camlen_sc.GetValue()
-        accv = self.accv_sc.GetValue()
-        accvm = accv * 1000
-        wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2)))
-        imgcal = float(self.imgcal_tc.GetValue())
+        circles = self.parent.toolbar.circles
+        lines = self.parent.toolbar.lines
         
-        del frame.axes.texts[-len(circles):]
+        self.parent.camlen = self.camlen_sc.GetValue()
+        self.parent.accv = self.accv_sc.GetValue()
+        accvm = self.parent.accv * 1000
+        self.parent.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2)))
+        self.parent.imgcal = float(self.imgcal_tc.GetValue())
+        
+        del self.parent.axes.texts[-len(circles)-len(lines):]
         
         for circle in circles:
-            circle.label_circle(frame.axes)
+            circle.label_circle(self.parent.axes)
+                        
+        for line in lines:
+            line.label_line(self.parent.axes)
             
-        frame.axes.figure.canvas.draw()
-        
+        self.parent.axes.figure.canvas.draw()
+        self.parent.statbar.SetStatusText("CamL: {0} cm | AccV: {1} kV | Res: {2}".format(self.parent.camlen, self.parent.accv, self.parent.imgcal), 0)
         self.Destroy()
         
     def OnClose(self, event):
@@ -840,16 +903,14 @@ class Pref(wx.Dialog):
 
 class Cal(wx.Dialog):
     def __init__(self, parent, id, title):
-    
-        global camlen
-        global wavelen
-        global imgcal
-        global accv
-        global circles
+        
+        self.parent = parent
         
         self.radii = []
+        self.circles = self.parent.toolbar.circles
+        self.lines = self.parent.toolbar.lines
         
-        for circle in circles:
+        for circle in self.circles:
             self.radii += [circle.radius]
         
         self.radii = array(self.radii)
@@ -875,11 +936,11 @@ class Cal(wx.Dialog):
 
             wx.StaticText(self, -1, 'Calibrate image resolution using marked rings\nand known d-spacing in angstroms', (20,20))
             wx.StaticText(self, -1, 'Accelerating Voltage: ', (20, 80))
-            wx.StaticText(self, -1, str(accv) + ' kV', (200, 80))
+            wx.StaticText(self, -1, str(self.parent.accv) + ' kV', (200, 80))
             wx.StaticText(self, -1, 'Wavelength: ', (20, 110))
-            wx.StaticText(self, -1, str('%.3g' % (wavelen)) + ' m', (200, 110))
+            wx.StaticText(self, -1, str('%.3g' % (self.parent.wavelen)) + ' m', (200, 110))
             wx.StaticText(self, -1, 'Camera Length: ', (20, 140))
-            wx.StaticText(self, -1, str(camlen) + ' cm', (200, 140))
+            wx.StaticText(self, -1, str(self.parent.camlen) + ' cm', (200, 140))
             
             i = 1
             sp = 30
@@ -898,7 +959,7 @@ class Cal(wx.Dialog):
             wx.StaticText(self, -1, 'Pattern Resolution (dpi): ', (20, window_height-100))
         
             self.imgcal_tc = wx.TextCtrl(self, -1, '',  (200, window_height-105), (60, -1))
-            imagecal_text = '%.2f' % (imgcal)
+            imagecal_text = '%.2f' % (self.parent.imgcal)
             self.imgcal_tc.SetValue(imagecal_text)
         
             set_btn = wx.Button(self, 1, 'Calibrate', (70, window_height-55))
@@ -916,30 +977,35 @@ class Cal(wx.Dialog):
             self.Bind(wx.EVT_CLOSE, self.OnClose)
             
     def OnCal(self, event):
-        global camlen
-        global wavelen
-        global imgcal
         
-        old_imgcal = copy(imgcal)
+        old_imgcal = copy(self.parent.imgcal)
         
         imgcals = []
         radius_angs = []
         for rad_tc in self.rad_ang_tc:
             radius_angs += [float(rad_tc.GetValue())]
         print radius_angs
-        imgcals = (self.radii[:self.radiilen] * radius_angs * 10**-10 * 2.54)/((float(camlen)/100.) * wavelen * 100.)
+        imgcals = (self.radii[:self.radiilen] * radius_angs * 10**-10 * 2.54)/((float(self.parent.camlen)/100.) * self.parent.wavelen * 100.)
         print imgcals    
-        imgcal = imgcals.mean()
+        self.parent.imgcal = imgcals.mean()
         
-        imagecal_text = '%.2f' % (imgcal)
+        imagecal_text = '%.2f' % (self.parent.imgcal)
         self.imgcal_tc.SetValue(imagecal_text)
         
-        del frame.axes.texts[-len(circles):]
+        del self.parent.axes.texts[-len(self.circles)-len(self.lines):]
         
-        for circle in circles:
-            circle.label_circle(frame.axes)
+        
+        for circle in self.circles:
+            circle.label_circle(self.parent.axes)
             
-        frame.axes.figure.canvas.draw()
+        for line in self.lines:
+            line.label_line(self.parent.axes)
+        
+        self.parent.statbar.SetStatusText("CamL: {0} cm | AccV: {1} kV | Res: {2}".format(self.parent.camlen, self.parent.accv, self.parent.imgcal), 0)
+        self.parent.axes.figure.canvas.draw()
+
+#    def OnSave(self, event):
+#        self.parent.cal_list =+ [{'name':cal_name, 'def': 0, 'value':self.parent.imgcal
 
     def OnClose(self, event):
         self.Destroy()
@@ -953,7 +1019,6 @@ class App(wx.App):
 #        wx.SplashScreen(splashImage, wx.SPLASH_CENTRE_ON_SCREEN|wx.SPLASH_TIMEOUT, 1000, None, wx.ID_ANY)
 #        wx.Yield()
 #Main Window
-        global frame
         fileOpen = sys.argv[1:]
         frame = diffaction_int(fileOpen)
         frame.Show(True)

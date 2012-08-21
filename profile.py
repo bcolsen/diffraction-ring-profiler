@@ -53,12 +53,12 @@ ID_CLRS=118
 ID_BSC=119
 ID_RSP=120
 
-global radframe
-global centers
+#global radframe
+#global centers
 
 def integrate(frame, pattern_open, circles, imgcal, wavelen, camlen, size):
     
-    global radframe
+#    global radframe
     print frame
     if pattern_open.any(): 
         if circles:
