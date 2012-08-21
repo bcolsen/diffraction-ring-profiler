@@ -192,13 +192,16 @@ class Param:
 
 class SliderGroup:
     def __init__(self, parent, label, param):
+        
+        self.panel = wx.Panel(parent, style=wx.SUNKEN_BORDER)
+        
         self.parent = parent
-        self.sliderLabel = wx.StaticText(parent, label=label)
-        self.sliderText = wx.TextCtrl(parent, -1, style=wx.TE_PROCESS_ENTER)
-        self.slider = wx.Slider(parent, -1, style=wx.SL_AUTOTICKS)
+        self.sliderLabel = wx.StaticText(self.panel, label=label)
+        self.sliderText = wx.TextCtrl(self.panel, -1, style=wx.TE_PROCESS_ENTER)
+        self.slider = wx.Slider(self.panel, -1, style=wx.SL_AUTOTICKS)
         self.slider.SetMax(param.maximum*1000)
-        self.slider.SetTick(1000)
-        #self.slider.SetTickFreq(100, 1)
+        #self.slider.SetTick(1000)
+        self.slider.SetTickFreq(1000, 1)
         self.setKnob(param.value)
         
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -206,7 +209,10 @@ class SliderGroup:
         sizer.Add(self.sliderText, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=2)
         sizer.Add(self.slider, 1, wx.EXPAND)
         self.sizer = sizer
-
+        
+        self.panel.SetSizer(sizer)
+        self.panel.Layout()
+        
         self.slider.Bind(wx.EVT_SLIDER, self.sliderHandler)
         self.sliderText.Bind(wx.EVT_TEXT_ENTER, self.sliderTextHandler)
 
@@ -578,7 +584,7 @@ class diffaction_int(wx.Frame):
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
         # Note - previous line stores the whole of the menu into the current object
 
-        #self.SetBackgroundColour(wx.NamedColor("WHITE"))
+        self.SetBackgroundColour(wx.NamedColor("WHITE"))
 
         self.figure = Figure(figsize=(8,8), dpi=76)
         self.axes = self.figure.add_subplot(111)
@@ -593,8 +599,9 @@ class diffaction_int(wx.Frame):
         self.axes.set_autoscale_on(False)
         self.axes.xaxis.set_ticks_position('bottom')
         self.axes.yaxis.set_ticks_position('left')
+        
         self.canvas = FigureCanvas(self, -1, self.figure)
-
+        
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
         # Capture the paint message
@@ -621,7 +628,7 @@ class diffaction_int(wx.Frame):
         self.toolbar.update()        
         
         self.img_conSliderGroup = SliderGroup(self, label='Image gamma:', param=self.img_con)
-        self.sizer.Add(self.img_conSliderGroup.sizer, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=5)
+        self.sizer.Add(self.img_conSliderGroup.panel, 0, wx.EXPAND | wx.ALIGN_CENTER | wx.ALL, border=0)
         
         # Define the code to be run when a menu option is selected
         wx.EVT_MENU(self, ID_ABOUT, self.OnAbout)
@@ -837,7 +844,7 @@ class Pref(wx.Dialog):
     
         self.parent = parent
         
-        wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, 320))
+        wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, 350))
         
         wx.StaticText(self, -1, 'Pattern Properties', (20,20))
         wx.StaticText(self, -1, 'Accelerating Voltage (kV): ', (20, 80))
