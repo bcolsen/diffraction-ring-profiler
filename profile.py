@@ -27,7 +27,10 @@ import matplotlib.patches as patches
 from polar_pattern import *
 from sim_index import *
 
+import ring_pattern
+
 import time
+
 class Timer():
    def __enter__(self): self.start = time.time()
    def __exit__(self, *args): print time.time() - self.start
@@ -52,6 +55,9 @@ ID_PPREF=117
 ID_CLRS=118
 ID_BSC=119
 ID_RSP=120
+ID_SIM2=121
+ID_PROSIM=122
+ID_RING=123
 
 #global radframe
 #global centers
@@ -241,6 +247,7 @@ class radial(wx.Frame):
         self.SetIcon(icon1)
         self.simulations = []
         self.plot_sim = 0
+        self.prosim = 0
         
         self.dirname = parent.dirname
         self.filename = parent.filename
@@ -271,7 +278,9 @@ class radial(wx.Frame):
         intmenu= wx.Menu()
         # use ID_ for future easy reference - much better than "48", "404" etc
         # The & character indicates the short cut key
-        intmenu.Append(ID_SIM, "&Import Simulation"," Open a Desktop Microscopist simulation")
+        intmenu.Append(ID_SIM2, "&Import GDIS Simulation"," Open a peak simulation from GDIS")
+        intmenu.Append(ID_PROSIM, "&Import GDIS Profile Sim"," Open a profile simulation from GDIS")
+        intmenu.Append(ID_SIM, "&Import DM Simulation"," Open a Desktop Microscopist simulation")
         intmenu.Append(ID_SAVE, "&Export Data"," Export Profile Data to a text file")
         
         # Setting up the menu. filemenu is a local variable at this stage.
@@ -294,6 +303,7 @@ class radial(wx.Frame):
         toolsmenu.Append(ID_POL, "&Polar Pattern"," Display polar pattern to compare with the profile")        
         toolsmenu.Append(ID_BSC, "Beam Stop &Correction"," Use the polar pattern to correct for a beam stopper")
         toolsmenu.Append(ID_RSP, "Remove &Spots","Removes a spot pattern from the profile")
+        toolsmenu.Append(ID_RING, "Make a Ring Figure","Uses the pattern and the fitted simulations to make a ring figure")
         # Creating the menubar.
         menuBar = wx.MenuBar()
         menuBar.Append(intmenu,"&Profile") # Adding the "patternmenu" to the MenuBar
@@ -337,6 +347,8 @@ class radial(wx.Frame):
         # Define the code to be run when a menu option is selected
         wx.EVT_MENU(self, ID_SAVE, self.OnSave)
         wx.EVT_MENU(self, ID_SIM, self.OnSimOpen)
+        wx.EVT_MENU(self, ID_SIM2, self.OnSim2Open)
+        wx.EVT_MENU(self, ID_PROSIM, self.OnProSimOpen)
         wx.EVT_MENU(self, ID_LABEL, self.toolbar._on_labelpeaks)    
         wx.EVT_MENU(self, ID_SUB, self.toolbar._on_subtract)
         wx.EVT_MENU(self, ID_RECEN, self.OnRecenter)
@@ -348,6 +360,7 @@ class radial(wx.Frame):
         wx.EVT_MENU(self, ID_CLRS, self.OnClearSim)        
         wx.EVT_MENU(self, ID_BSC, self.OnBeamStop)
         wx.EVT_MENU(self, ID_RSP, self.OnRemoveSpots)
+        wx.EVT_MENU(self, ID_RING, self.OnRingPattern)
         self.SetSizer(self.sizer)
         self.Fit()
 
@@ -478,6 +491,7 @@ class radial(wx.Frame):
         self.rdf /= r
                 
         self.drdf = (arange(B)*Dd)/(((imgcal / 2.54) * 100) * wavelen * (float(camlen) / 100) * 10**10)
+        #self.drdf = 2*sin(.5*(arctan((arange(B)*Dd)/((float(camlen) / 100)*((imgcal / 2.54) * 100)))))/(wavelen * 10**10)
         
         #print self.rdf
         #print self.rdf, self.drdf , len(self.rdf), len(self.drdf)
@@ -491,6 +505,7 @@ class radial(wx.Frame):
         else:
             rc('text', usetex=False)
             rc('font', family='sans-serif')
+            rc('mathtext', fontset = 'custom')
             self.angstrom = u'\u00c5'
         
         self.rdf /= self.rdf.max()
@@ -509,12 +524,14 @@ class radial(wx.Frame):
             log_polar = rot90(log(1+self.gamma*self.polar_grid))
             self.axes.imshow(log_polar, cmap=cmap, origin='lower',
                 extent=(0, self.drdf.max(), 0, self.rdf.max()+self.rdf.max()*.2))
+        if self.prosim:
+            self.axes.plot(self.prosim_inv_d,self.prosim_int, linewidth=1, c='r', zorder = 40)
+            self.axes.figure.canvas.draw()
                     
         if self.plot_sim:
             points = []
             sim_name = []
-            col_index = 0
-            color = ['#2AA298','#E7E73C','#42D151']
+            color = ['#42D151','#2AA298','#E7E73C']
             marker = ['o','^','s']
             print len(self.simulations)#, self.srdfb
             if len(self.simulations) >= 3:
@@ -522,22 +539,25 @@ class radial(wx.Frame):
             else:
                 sim_len_i = len(self.simulations)
             print sim_len_i#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
-            for simulation in self.simulations[-sim_len_i:]:
+            for col_index, simulation in enumerate(self.simulations[-sim_len_i:]):
                 sim_name += [simulation.sim_label]
-                sim = simulation.srdf/simulation.sdrdf**1.5
+                sim = simulation.srdf
                 sim_norm = sim/float(max(sim))
                 #print sim, max(sim[1:]), min(sim[1:]), sim_norm
                 self.axes.vlines(simulation.sdrdf, 0, sim_norm*simulation.sim_intens, color[col_index] ,linewidth = 2, zorder = 2)
                 #sim_index = nonzero(self.srdfb[i]!=0)
                 points += [self.axes.plot(simulation.sdrdf, sim_norm*simulation.sim_intens, marker[col_index],  c=color[col_index], ms = 8, zorder = 3)]
-                i=0
-                for label in simulation.peak_index_labels:
+                for i,label in enumerate(simulation.peak_index_labels):
                     #print label
-                    bbox_props = dict(boxstyle="round", fc=color[col_index], ec="0.5", alpha=0.7)
-                    self.axes.text(simulation.sdrdf[i], sim_norm[i]*simulation.sim_intens + .05, label, ha="center", va="bottom", size=10, rotation=90, zorder = 100,
-                        bbox=bbox_props)
-                    i+=1
-                col_index += 1
+                    if label:
+                        if label.find('-') == -1:
+                            label = r'('+label+')'
+                        else:
+                            label = r'$\mathsf{('+label.replace('-',r'\bar ')+')}$'
+                        #print label
+                        bbox_props = dict(boxstyle="round", fc=color[col_index], ec="0.5", alpha=0.7)
+                        self.axes.text(simulation.sdrdf[i], sim_norm[i]*simulation.sim_intens + .05, label, ha="center", va="bottom", size=10, rotation=90, zorder = 100,
+                            bbox=bbox_props)
         
             print sim_name, points 
             leg = self.axes.legend(points , sim_name, loc='upper right', shadow=0, fancybox=True, numpoints=1)    
@@ -922,6 +942,102 @@ class radial(wx.Frame):
                 error_int_dlg.Show(True)
                 error_int_dlg.Centre()
     
+    def OnSim2Open(self,e):
+        # In this case, the dialog is created within the method because
+        # the directory name, etc, may be changed during the running of the
+        # application. In theory, you could create one earlier, store it in
+        # your frame object and change it when it was called to reflect
+        # current parameters / values
+        dlg = wx.FileDialog(self, "Choose a GDIS electron powder plot with a wavelength of .5 and with U,V,W set to 0",
+            self.dirname, "", "txt|*.txt;*.TXT|All Files|*.*", wx.OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+                        
+            filename=dlg.GetFilename()
+            dirname=dlg.GetDirectory()
+            name, ext = os.path.splitext(filename)
+            print dirname
+            
+            try:
+                sim_open = loadtxt(os.path.join(dirname, filename),skiprows=0)
+            except:
+                dlg.Destroy()
+                error_file = 'File must be an exported GDIS Graph.'
+                print error_file
+                error_int_dlg = Error(self, -1, 'Error', error_file)
+                error_int_dlg.Show(True)
+                error_int_dlg.Centre()
+            else:
+                print len(nonzero(sim_open[:,1])[0])
+                if len(nonzero(sim_open[:,1])[0]) <= 200:
+                    self.simulations += [Simulation(sim_open, name)]
+                    
+                    self.plot_sim = 1
+                    
+                    self.axes.cla()
+                    self.plot(2,'b')        
+                    
+                    self.axes.figure.canvas.draw()
+                    
+                    dlg.Destroy()
+                else:
+                    dlg.Destroy()
+                    error_file = 'File must have less than 200 peaks.'
+                    print error_file
+                    error_int_dlg = Error(self, -1, 'Error', error_file)
+                    error_int_dlg.Show(True)
+                    error_int_dlg.Centre()
+    
+    def OnProSimOpen(self,e):
+        # In this case, the dialog is created within the method because
+        # the directory name, etc, may be changed during the running of the
+        # application. In theory, you could create one earlier, store it in
+        # your frame object and change it when it was called to reflect
+        # current parameters / values
+        dlg = wx.FileDialog(self, "Choose a GDIS electron powder plot with a wavelength of .5, with Lorentzian, and with U,V,W set to 0.6",
+            self.dirname, "", "txt|*.txt;*.TXT|All Files|*.*", wx.OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+                        
+            filename=dlg.GetFilename()
+            dirname=dlg.GetDirectory()
+            name, ext = os.path.splitext(filename)
+            print dirname
+            
+            try:
+                sim_open = loadtxt(os.path.join(dirname, filename),skiprows=0)
+            except:
+                dlg.Destroy()
+                error_file = 'Image must be a Digital Microscopist screen shot.'
+                print error_file
+                error_int_dlg = Error(self, -1, 'Error', error_file)
+                error_int_dlg.Show(True)
+                error_int_dlg.Centre()
+            else:
+                self.prosim = 1
+                theta_2 = sim_open[:,0]
+                inv_d = (2*sin(((theta_2/180)*pi)/2.))/.5
+                
+                intensity = sim_open[:,1]
+                intensity /= intensity.max()
+
+                print sim_open.shape, len(theta_2), len(intensity)
+
+                #self.axes.plot(inv_d,intensity)
+                #self.axes.figure.canvas.draw()
+                
+                self.prosim_int = intensity
+                self.prosim_inv_d = inv_d
+                self.prosim_theta_2 = theta_2
+                
+                self.axes.cla()
+                self.plot(2,'b')
+                self.axes.figure.canvas.draw()
+                
+                dlg.Destroy()
+
+    def OnRingPattern(self,e):
+        ringframe = ring_pattern.ring_pattern(self)
+        ringframe.Show(True)
+            
     def OnSimLabel(self,e):
         dlg = Index(self, -1, 'Index Peaks')
         dlg.Show(True)

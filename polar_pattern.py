@@ -141,4 +141,106 @@ def polar_mean(output):
     out_median = median(output, axis=1)
     
     return out_mean, output.sum(axis=1)/ptv, out_median
+    
+def make_profile_rings(pro_intens, theta_2, origin, boxs):
+    
+    print origin
+    #print Cr[0]-boxs,Cr[0]+boxs,Cr[1]-boxs,Cr[1]+boxs
 
+    #data = data[int(Cr[0]-boxs):int(Cr[0]+boxs),int(Cr[1]-boxs):int(Cr[1]+boxs)]
+    
+    #nx = 2*len(pro_base)
+    #print nx, boxs
+    
+    origin = (len(theta_2), len(theta_2))
+    print origin
+    
+    pro_base = (2*sin(((theta_2/180)*pi)/2.))/.5
+    
+    pro_base_concat = concatenate((-pro_base[:0:-4],pro_base[::4]))
+    pro_base_concat = (pro_base_concat/pro_base.max()) * len(pro_base)
+    img_size = len(pro_base_concat)
+    
+#    plt.figure()
+#    plt.plot(pro_base, pro_intens, 'r')
+
+    pro_base_l = linspace(0,max(pro_base),len(pro_base))
+    
+#    plt.plot(pro_base_l, pro_intens, 'b')
+
+    pro_intens_l = interp(pro_base_l, pro_base, pro_intens)
+    
+#    plt.plot(pro_base_l, pro_intens_l, 'g.')
+#    
+#    plt.figure()
+#    plt.plot(pro_base_concat)
+    
+    lin_index = linspace(0,2*len(pro_base),img_size)-len(pro_base)
+    
+#    plt.plot(lin_index)
+	
+    # make a polar grid
+    origin_x, origin_y = origin
+#    x, y = meshgrid(pro_base_concat, pro_base_concat)
+    #x -= origin_x
+    #y -= origin_y
+#    r, theta = cart2polar(x, y)
+    
+    x_l,y_l = meshgrid(lin_index,lin_index)
+    r_l, theta_l = cart2polar(x_l, y_l)
+    
+#    print r, r.max()
+#    plt.figure()
+#    plt.imshow(r, cmap='gray')
+#    plt.figure()
+#    #plt.plot(r[r.shape[0]//2])
+#    #plt.plot(r_l[r_l.shape[0]//2])
+#    plt.plot(-(r[r.shape[0]//2]-r_l[r_l.shape[0]//2]))
+    
+    #plt.show()
+    
+    # Make a regular (in polar space) grid based on the min and max r & theta
+#    r_i = linspace(0, boxs-1, nx)
+#    theta_i = linspace(0, 2*pi, nx)
+#    theta_grid, r_grid = meshgrid(theta_i, r_i)
+
+    # Project the r and theta grid back into pixel coordinates
+    #xi, yi = polar2cart(r_grid, theta_grid)
+    #xi += origin[0] # We need to shift the origin back to 
+    #yi += origin[1] # back to the lower-left corner...
+    #xi, yi = xi.flatten(), yi.flatten()
+    r_l = r_l.flatten()
+    coords = vstack((r_l, zeros(len(r_l)))) # (map_coordinates requires a 2xn array)
+    
+    print coords
+	
+    #print coords.shape
+	
+    # Reproject each band individually and the restack
+    # (uses less memory than reprojection the 3-dimensional array in one step)
+    bands = []
+    band = array([pro_intens_l,ones(len(pro_intens_l))]).T
+    zi = sp.ndimage.map_coordinates(band, coords, order=2)
+    bands = (zi.reshape((img_size, img_size)))
+    output = bands
+    #pmrdf, psrdf, prrdf= polar_mean(output)
+    
+#    plt.figure()
+#    plt.imshow(output, cmap='gray')
+#    plt.plot(origin[0]/4,origin[1]/4,'+')
+#    plt.show()
+    
+    return output
+
+if __name__ == "__main__":
+    data = loadtxt("../tem/temfig/au_pro.txt")
+    
+    theta_2 = data[:,0]
+    
+    intensity = data[:,1]
+    intensity /= intensity.max()
+
+    print data.shape, len(theta_2), len(intensity)
+    
+    make_profile_rings(intensity, theta_2, (100,100), 200)
+    

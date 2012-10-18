@@ -105,12 +105,12 @@ class Circ:
         self.dspacestr = ur'%.2f \u00c5' % (self.dspace * 10**10)
         
         bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.5)
-        axi.text(self.point3[0,0], self.point3[0,1], self.dspacestr, ha="center", va="center", size=10,
+        axi.text(self.point3[0,0], self.point3[0,1], self.dspacestr, ha="center", va="center", size=12,
             bbox=bbox_props)
             
     def mark_circle(self, axi):
-        tri_mark = patches.Polygon(self.point3, closed=True, facecolor='red', alpha=0.5)
-        circ_mark = patches.Circle(self.center, self.radius, fill = 0 , color='cyan', linewidth = 1, alpha=0.3)
+        tri_mark = patches.Polygon(self.point3, closed=True, facecolor='red', alpha=0.7, linewidth = 2)
+        circ_mark = patches.Circle(self.center, self.radius, fill = 0 , color='cyan', linewidth = 2, alpha=0.7)
         center_mark = axi.plot(self.center[0], self.center[1], 'g+')
         #axi.add_patch(tri)
         axi.add_patch(circ_mark)
@@ -965,9 +965,9 @@ class Cal(wx.Dialog):
             
             wx.StaticText(self, -1, 'Pattern Resolution (dpi): ', (20, window_height-100))
         
-            self.imgcal_tc = wx.TextCtrl(self, -1, '',  (200, window_height-105), (60, -1))
+            self.imgcal_tc = wx.StaticText(self, -1, '',  (200, window_height-105), (60, -1))
             imagecal_text = '%.2f' % (self.parent.imgcal)
-            self.imgcal_tc.SetValue(imagecal_text)
+            self.imgcal_tc.SetLabel(imagecal_text)
         
             set_btn = wx.Button(self, 1, 'Calibrate', (70, window_height-55))
             set_btn.SetFocus()
@@ -997,7 +997,7 @@ class Cal(wx.Dialog):
         self.parent.imgcal = imgcals.mean()
         
         imagecal_text = '%.2f' % (self.parent.imgcal)
-        self.imgcal_tc.SetValue(imagecal_text)
+        self.imgcal_tc.SetLabel(imagecal_text)
         
         del self.parent.axes.texts[-len(self.circles)-len(self.lines):]
         
