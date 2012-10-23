@@ -106,13 +106,19 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         
         self.parent = parent
         
-        self.AddCheckTool(self.ON_LABELPEAKS, _load_bitmap('hand.png'),
+        self.AddSeparator()
+        
+        self.AddCheckTool(self.ON_LABELPEAKS, _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_label.png')),
                 shortHelp= 'Label Peaks',longHelp= 'Click on a peak to label the d-spacing')
+        
+        self.AddSeparator()
+        
         wx.EVT_TOOL(self, self.ON_LABELPEAKS, self._on_labelpeaks)
-        self.AddSimpleTool(self.ON_CLEAR, _load_bitmap('stock_down.xpm'),
+        self.AddSimpleTool(self.ON_CLEAR, _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_good.png')),
                         'Clear Profiles', 'Clear all except the last profile')
         wx.EVT_TOOL(self, self.ON_CLEAR, self._on_clear)
-        self.AddSimpleTool(self.ON_UNDO, _load_bitmap('stock_left.xpm'),
+        undo_ico = wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR, (16,16))
+        self.AddSimpleTool(self.ON_UNDO, undo_ico,
                         'Undo', 'Go back to the previous profile')
         wx.EVT_TOOL(self, self.ON_UNDO, self._on_undo)
         
@@ -241,7 +247,7 @@ class radial(wx.Frame):
         wx.Frame.__init__(self,parent,-1,
             "Intensity Profile - "+parent.filename ,size=(550,350))
                 
-        iconFile = "diff_profiler_ico.ico"
+        iconFile = os.path.join(parent.iconspath, "diff_profiler_ico.ico")
         icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
         
         self.SetIcon(icon1)
@@ -540,13 +546,14 @@ class radial(wx.Frame):
                 sim_len_i = len(self.simulations)
             print sim_len_i#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
             for col_index, simulation in enumerate(self.simulations[-sim_len_i:]):
+                sim_color = simulation.sim_color if simulation.sim_color else color[col_index]
                 sim_name += [simulation.sim_label]
                 sim = simulation.srdf
                 sim_norm = sim/float(max(sim))
                 #print sim, max(sim[1:]), min(sim[1:]), sim_norm
-                self.axes.vlines(simulation.sdrdf, 0, sim_norm*simulation.sim_intens, color[col_index] ,linewidth = 2, zorder = 2)
+                self.axes.vlines(simulation.sdrdf, 0, sim_norm*simulation.sim_intens, sim_color ,linewidth = 2, zorder = 2)
                 #sim_index = nonzero(self.srdfb[i]!=0)
-                points += [self.axes.plot(simulation.sdrdf, sim_norm*simulation.sim_intens, marker[col_index],  c=color[col_index], ms = 8, zorder = 3)]
+                points += [self.axes.plot(simulation.sdrdf, sim_norm*simulation.sim_intens, marker[col_index],  c=sim_color, ms = 8, zorder = 3)]
                 for i,label in enumerate(simulation.peak_index_labels):
                     #print label
                     if label:
@@ -555,7 +562,7 @@ class radial(wx.Frame):
                         else:
                             label = r'$\mathsf{('+label.replace('-',r'\bar ')+')}$'
                         #print label
-                        bbox_props = dict(boxstyle="round", fc=color[col_index], ec="0.5", alpha=0.7)
+                        bbox_props = dict(boxstyle="round", fc=sim_color, ec="0.5", alpha=0.7)
                         self.axes.text(simulation.sdrdf[i], sim_norm[i]*simulation.sim_intens + .05, label, ha="center", va="bottom", size=10, rotation=90, zorder = 100,
                             bbox=bbox_props)
         

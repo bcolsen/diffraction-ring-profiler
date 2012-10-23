@@ -7,9 +7,11 @@ import wx.lib.scrolledpanel as scrolled
       
 class Sim_Index(scrolled.ScrolledPanel):
 
-    def __init__(self, parent, simulation):
+    def __init__(self, parent, simulation, color):
         scrolled.ScrolledPanel.__init__(self, parent, id = -1,  style = wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
-
+        
+        sim_color = simulation.sim_color if simulation.sim_color else color
+        
         self.sdrdf = simulation.sdrdf#[2.5,1.5,1,.8,2.5,1.5,1,.8,2.5,1.5,1,.8,2.5,1.5,1,.8]
         self.sdrdflen = len(self.sdrdf)
 
@@ -27,13 +29,24 @@ class Sim_Index(scrolled.ScrolledPanel):
         self.sim_intens_tc = wx.TextCtrl(self, -1, '',  (200, 30), (60, -1))
         sim_intens_text = str(simulation.sim_intens)
         self.sim_intens_tc.SetValue(sim_intens_text)		
-
+        
+        wx.StaticText(self, -1, 'Simulation Color: ', (20, 65))
+        
+        self.colorpicker = wx.ColourPickerCtrl(self, -1, col=sim_color, pos=(200, 60),
+                 size=(60, 30), name='Simulation Color')
+        #self.sim_color_tc = wx.TextCtrl(self, -1, '',  (150, 60), (90, -1))
+        #self.colorDlgBtn = wx.Button(self,  -1, "...",  (240, 60), (20, -1))
+        #self.colorDlgBtn.Bind(wx.EVT_BUTTON, self.onColorDlg)
+        #self.sim_color_tc.SetValue('#ffffff')		
+        
+        
         vbox = wx.BoxSizer(wx.VERTICAL)
 
-        i = 3
+        offset = 4
         sp = 30
+        i = offset
         for peak in self.sdrdf:
-            static = wx.StaticText(self, -1, 'd-spacing '+str(i)+':', (20, sp*i+5))
+            static = wx.StaticText(self, -1, 'd-spacing '+str(i-offset+1)+':', (20, sp*i+5))
             dspace = 1/peak
             wx.StaticText(self, -1, str('%.2f' % dspace) + u' \u00c5', (135, sp*i+5))
             i += 1
@@ -41,22 +54,39 @@ class Sim_Index(scrolled.ScrolledPanel):
         vbox.Add((250,sp*i+5), wx.EXPAND, 0)
 
         if len(self.peak_index_labels)==0:		
-            i = 3
+            i = offset
             self.peak_index_tc=[]				
             for peak_index_label in self.sdrdf:
                 self.peak_index_tc += [wx.TextCtrl(self, -1, '',  (200, sp*i), (60, -1))]
                 #self.peak_index_tc[i-1].SetValue(str(au_radius))		
                 i += 1
         else:
-            i = 3
+            i = offset
             self.peak_index_tc=[]				
             for peak_index_label in self.peak_index_labels[:self.sdrdflen]:
                 self.peak_index_tc += [wx.TextCtrl(self, -1, '',  (200, sp*i), (60, -1))]
-                self.peak_index_tc[i-3].SetValue(str(peak_index_label))		
+                self.peak_index_tc[i-offset].SetValue(str(peak_index_label))		
                 i += 1
 
         self.SetSizer(vbox)
         self.SetupScrolling()
+        
+#    def onColorDlg(self, event):
+#        """
+#        This is mostly from the wxPython Demo!
+#        """
+#        dlg = wx.ColourDialog(self)
+# 
+#        # Ensure the full colour dialog is displayed, 
+#        # not the abbreviated version.
+#        dlg.GetColourData().SetChooseFull(True)
+# 
+#        if dlg.ShowModal() == wx.ID_OK:
+#            data = dlg.GetColourData()
+#            self.sim_color_tc.SetValue('#%02x%02x%02x' % data.GetColour().Get())
+#            print '#%02x%02x%02x' % data.GetColour().Get()
+# 
+#        dlg.Destroy()
 
 class Index(wx.Dialog):
     def __init__(self, parent, id, title):
@@ -76,9 +106,11 @@ class Index(wx.Dialog):
         else:
             sim_len_i = len(self.simulations)
         print sim_len_i#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
-
-        for simulation in self.simulations[-sim_len_i:]:
-            sim = Sim_Index(nb,simulation)
+        
+        color = ['#42D151','#2AA298','#E7E73C']
+        
+        for i, simulation in enumerate(self.simulations[-sim_len_i:]):
+            sim = Sim_Index(nb,simulation,color[i])
             simulation.sim_tcs = sim
             nb.AddPage(sim, simulation.sim_name)
 
@@ -101,7 +133,8 @@ class Index(wx.Dialog):
 
             for peak_index_tc in simulation.sim_tcs.peak_index_tc:
                 peak_index_labels += [peak_index_tc.GetValue()]
-            simulation.edit_index_labels(peak_index_labels, simulation.sim_tcs.sim_label_tc.GetValue(), simulation.sim_tcs.sim_intens_tc.GetValue())
+            print simulation.sim_tcs.colorpicker.GetColour(), simulation.sim_tcs.colorpicker.GetColour()[0:3]
+            simulation.edit_index_labels(peak_index_labels, simulation.sim_tcs.sim_label_tc.GetValue(), simulation.sim_tcs.sim_intens_tc.GetValue(), simulation.sim_tcs.colorpicker.GetColour())
         self.Destroy()
 
         self.parent.axes.cla()
@@ -188,6 +221,7 @@ class Simulation:
         
         self.peak_index_labels = []
         self.sim_tcs = []
+        self.sim_color = 0
 
         #print 1/array(sim_scatter)
 
@@ -205,10 +239,11 @@ class Simulation:
 
         print self.sdrdf, self.srdf
 
-    def edit_index_labels(self, index_labels, sim_label, sim_intens):
+    def edit_index_labels(self, index_labels, sim_label, sim_intens, sim_color):
         self.peak_index_labels = index_labels
         self.sim_label = sim_label
         self.sim_intens = float(sim_intens)
+        self.sim_color = '#%02x%02x%02x' % sim_color[0:3]
 
 #app = wx.App()
 #dlg = Index(None, -1, 'Index Peaks')

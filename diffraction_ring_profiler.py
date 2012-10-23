@@ -44,7 +44,7 @@ fullpath = os.path.abspath(pathname)
 os.chdir(fullpath)
 args = sys.argv[1:] 
 
-print args
+print args, fullpath
 #with file('log.txt', 'w') as outfile:
 #    outfile.write('# Args\n')
 #    outfile.write(str(args))
@@ -143,11 +143,11 @@ class Line:
         self.dspacestr = ur'%.2f \u00c5' % (self.dspace * 10**10)
         
         bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.5)
-        axi.text(self.point2[0,0], self.point2[0,1], self.dspacestr, ha="center", va="center", size=10,
+        axi.text(self.point2[0,0], self.point2[0,1], self.dspacestr, ha="center", va="center", size=12,
             bbox=bbox_props)
             
     def mark_line(self, axi):
-        line_mark = patches.Polygon(self.point2, color='yellow', linewidth = 1, alpha=0.5)
+        line_mark = patches.Polygon(self.point2, color='yellow', linewidth = 2, alpha=0.5)
         axi.add_patch(line_mark)
         axi.set_autoscale_on(False)
 
@@ -270,16 +270,22 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         self.OnUndo = OnUndo
         self.parent = parent
         
-        self.AddCheckTool(self.ON_MARKRINGS, _load_bitmap('hand.png'),
+        self.AddSeparator()
+        
+        self.AddCheckTool(self.ON_MARKRINGS, _load_bitmap(os.path.join(self.parent.iconspath, '3_point.png')),
                     shortHelp= 'Mark Rings',longHelp= "mark 3-points on a ring to find center")
         wx.EVT_TOOL(self, self.ON_MARKRINGS, self._on_markrings)
-        self.AddCheckTool(self.ON_MARKSPOTS, _load_bitmap('stock_right.xpm'),
+        self.AddCheckTool(self.ON_MARKSPOTS, _load_bitmap(os.path.join(self.parent.iconspath, '2_point.png')),
                     shortHelp= 'Mark Spots',longHelp= "mark 2 spots to measure distance")
         wx.EVT_TOOL(self, self.ON_MARKSPOTS, self._on_markspots)
-        self.AddSimpleTool(self.ON_INTEGRATE, _load_bitmap('stock_up.xpm'),
+        
+        self.AddSeparator()
+        
+        self.AddSimpleTool(self.ON_INTEGRATE, _load_bitmap(os.path.join(self.parent.iconspath, 'profile.png')),
                         'Profile', 'Extract profiles from the diffraction pattern')
         wx.EVT_TOOL(self, self.ON_INTEGRATE, self._on_integrate)
-        self.AddSimpleTool(self.ON_UNDO, _load_bitmap('stock_left.xpm'),
+        undo_ico = wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR, (16,16))
+        self.AddSimpleTool(self.ON_UNDO, undo_ico,
                         'Undo', 'Undo last point or ring')
         wx.EVT_TOOL(self, self.ON_UNDO, self._on_undo)
         
@@ -508,7 +514,10 @@ class diffaction_int(wx.Frame):
 
     def __init__(self, filename = None):
         
-        im = Image.open('diff_profile_text.png')
+        self.fullpath = fullpath
+        self.iconspath = os.path.join(self.fullpath,'icons')
+        
+        im = Image.open(os.path.join(self.iconspath, 'diff_profile_text.png'))
         im = im.convert('L')
         x_str = im.tostring('raw',im.mode,0,1)
         self.pattern = fromstring(x_str,uint8)
@@ -531,7 +540,7 @@ class diffaction_int(wx.Frame):
         
         self.Bind(wx.EVT_CLOSE, self.OnExit)
 
-        iconFile = "diff_profiler_ico.ico"
+        iconFile = os.path.join(self.iconspath, "diff_profiler_ico.ico")
         icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
         self.SetIcon(icon1)
 
@@ -965,7 +974,7 @@ class Cal(wx.Dialog):
             
             wx.StaticText(self, -1, 'Pattern Resolution (dpi): ', (20, window_height-100))
         
-            self.imgcal_tc = wx.StaticText(self, -1, '',  (200, window_height-105), (60, -1))
+            self.imgcal_tc = wx.StaticText(self, -1, '',  (200, window_height-100), (60, -1))
             imagecal_text = '%.2f' % (self.parent.imgcal)
             self.imgcal_tc.SetLabel(imagecal_text)
         

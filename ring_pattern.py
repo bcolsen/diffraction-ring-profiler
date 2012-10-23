@@ -37,16 +37,13 @@ class Timer():
 from matplotlib import rc
 
 rc('savefig', dpi=600)
-rc("xtick", direction="out")
-rc("ytick", direction="out")
-rc("lines", markeredgewidth=1)
 
 class ring_pattern(wx.Frame):
 
     def __init__(self, parent):
         wx.Frame.__init__(self,parent,-1,"Ring Figure - "+parent.filename ,size=(550,350))
                 
-        iconFile = "diff_profiler_ico.ico"
+        iconFile = "icons/diff_profiler_ico.ico"
         icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
         
         self.SetIcon(icon1)
@@ -107,7 +104,7 @@ class ring_pattern(wx.Frame):
         
     def ring_plot(self):
         
-        rc('font', size=16)
+        #rc('font', size=16)
         
         if self.parent.latex:
             rc('text', usetex=True)
@@ -140,17 +137,18 @@ class ring_pattern(wx.Frame):
                 sim_len_i = len(self.parent.simulations)
             print sim_len_i#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
             for col_index, simulation in enumerate(self.parent.simulations[-sim_len_i:]):
+                sim_color = simulation.sim_color if simulation.sim_color else color[col_index]
                 sim_name += [simulation.sim_label]
                 sim = simulation.srdf
                 sim_norm = sim/float(max(sim))
                 #print sim, max(sim[1:]), min(sim[1:]), sim_norm
-                marks += [plot(0,0,'-',color=color[col_index], zorder = -10)]
+                marks += [self.axes.plot(0,0,'-',color=sim_color, zorder = -10)]
                 rect = Rectangle((-self.parent.limit,-self.parent.limit),self.parent.limit,self.parent.limit, facecolor="none", edgecolor="none")
                 self.axes.add_patch(rect)
                 if not simulation.peak_index_labels:
                     for radius in simulation.sdrdf:
                         #print radius
-                        circ_mark = patches.Circle((0,0), radius, fill = 0 , color=color[col_index], linewidth = 2, alpha=.7)
+                        circ_mark = patches.Circle((0,0), radius, fill = 0 , color=sim_color, linewidth = 2, alpha=.7)
                         self.axes.add_patch(circ_mark)
                         circ_mark.set_clip_path(rect)
                         self.axes.set_autoscale_on(False)
@@ -159,7 +157,7 @@ class ring_pattern(wx.Frame):
                     for i,label in enumerate(simulation.peak_index_labels):
                         #print label
                         if label:
-                            circ_mark = patches.Circle((0,0), simulation.sdrdf[i], fill = 0 , color=color[col_index], linewidth = 2, alpha=.7)
+                            circ_mark = patches.Circle((0,0), simulation.sdrdf[i], fill = 0 , color=sim_color, linewidth = 2, alpha=.7)
                             self.axes.add_patch(circ_mark)
                             circ_mark.set_clip_path(rect)
                             self.axes.set_autoscale_on(False)
@@ -169,22 +167,22 @@ class ring_pattern(wx.Frame):
                             else:
                                 label = r'$\mathsf{('+label.replace('-',r'\bar ')+')}$'
                             #print label
-                            bbox_props = dict(boxstyle="round", fc=color[col_index], ec="0.5", alpha=1, lw=1.5)
+                            bbox_props = dict(boxstyle="round", fc=sim_color, ec="0.5", alpha=1, lw=1.5)
                             arrowprops=dict(arrowstyle="wedge,tail_width=1.",
-                                fc=color[col_index], ec="0.5",
+                                fc=sim_color, ec="0.5",
                                 alpha=.7,
                                 patchA=None,
                                 patchB=circ_mark,
                                 relpos=(0.5, 0.5),
                                 )
-                            an = self.axes.annotate(label, xy=(0, 0),xytext=(.1-col_index/10.0, .5-i/15.0),textcoords='axes fraction', ha="center", va="center", size=16, rotation=0, zorder = 100, picker=True,
+                            an = self.axes.annotate(label, xy=(0, 0),xytext=(.1+col_index/10.0, .5-i/15.0),textcoords='axes fraction', ha="center", va="center", size=16, rotation=0, zorder = 100, picker=True,
                                 bbox=bbox_props, arrowprops=arrowprops)
                             an.draggable()
 
 
         
             print sim_name, marks 
-            leg = self.axes.legend(marks , sim_name, loc='upper left', shadow=0, fancybox=True, numpoints=1)    
+            leg = self.axes.legend(marks , sim_name, loc='upper left', shadow=0, fancybox=True, numpoints=1, prop={'size':16})    
             frame = leg.get_frame()
             frame.set_alpha(0.7)
         
