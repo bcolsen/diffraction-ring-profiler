@@ -185,6 +185,9 @@ class ring_pattern(wx.Frame):
             leg = self.axes.legend(marks , sim_name, loc='upper left', shadow=0, fancybox=True, numpoints=1, prop={'size':16})    
             frame = leg.get_frame()
             frame.set_alpha(0.7)
+            for handle in leg.legendHandles:
+                handle.set_linewidth(3.0)
+
         
         #self.axes.axis('equal')
         self.axes.set_xlim(-self.parent.limit, self.parent.limit)
