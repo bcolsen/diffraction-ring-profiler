@@ -154,10 +154,11 @@ class ring_pattern(wx.Frame):
                         self.axes.set_autoscale_on(False)
                     #sim_index = nonzero(self.srdfb[i]!=0)
                 else:
-                    for i,label in enumerate(simulation.peak_index_labels):
+                    j=0
+                    for i,label in enumerate(simulation.peak_index_labels[::-1]):
                         #print label
                         if label:
-                            circ_mark = patches.Circle((0,0), simulation.sdrdf[i], fill = 0 , color=sim_color, linewidth = 2, alpha=.7)
+                            circ_mark = patches.Circle((0,0), simulation.sdrdf[::-1][i], fill = 0 , color=sim_color, linewidth = 2, alpha=.7)
                             self.axes.add_patch(circ_mark)
                             circ_mark.set_clip_path(rect)
                             self.axes.set_autoscale_on(False)
@@ -175,9 +176,10 @@ class ring_pattern(wx.Frame):
                                 patchB=circ_mark,
                                 relpos=(0.5, 0.5),
                                 )
-                            an = self.axes.annotate(label, xy=(0, 0),xytext=(.1+col_index/10.0, .5-i/15.0),textcoords='axes fraction', ha="center", va="center", size=16, rotation=0, zorder = 100, picker=True,
+                            an = self.axes.annotate(label, xy=(0, 0),xytext=(.1+col_index/10.0, .1+j/15.0),textcoords='axes fraction', ha="center", va="center", size=16, rotation=0, zorder = 90-col_index, picker=True,
                                 bbox=bbox_props, arrowprops=arrowprops)
                             an.draggable()
+                            j+=1
 
 
         
