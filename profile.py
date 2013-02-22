@@ -20,6 +20,7 @@ import os
 from numpy import *
 import scipy.constants as con
 from scipy.optimize import leastsq
+import scipy.special
 #import scipy.linalg
 from matplotlib.pyplot import *
 import matplotlib.patches as patches
@@ -270,6 +271,8 @@ class radial(wx.Frame):
         self.latex = 0
         self.polar_neg = 1
         self.angstrom = u'\u00c5'
+        self.sctr_vec = 0
+        self.use_voigt = 1
             
         # dirname is an APPLICATION variable that we're choosing to store
         # in with the frame - it's the parent directory for any file we
@@ -303,7 +306,7 @@ class radial(wx.Frame):
         toolsmenu= wx.Menu()
         # use ID_ for future easy reference - much better than "48", "404" etc
         # The & character indicates the short cut key
-        toolsmenu.Append(ID_LABEL, "&Label Peaks"," Label peak on the diffraction")
+        #toolsmenu.Append(ID_LABEL, "&Label Peaks"," Label peak on the diffraction")
         toolsmenu.Append(ID_SUB, "&Background Subtract"," Subtract background from the diffraction")
         toolsmenu.Append(ID_RECEN, "&Recenter(Sharpen Peaks)"," Sharpen profile peaks by recentering")
         toolsmenu.Append(ID_POL, "&Polar Pattern"," Display polar pattern to compare with the profile")        
@@ -387,6 +390,8 @@ class radial(wx.Frame):
         dspace.sort()
         print 1/dspace[-1]
         
+        self.sctr_vec = 1/dspace[-1]
+        
         C = centers[:].sum(axis=0)/centers[:].shape[0]
         self.C = C
         print centers, C
@@ -397,56 +402,58 @@ class radial(wx.Frame):
         self.drdfb = [self.drdf.copy()]
         
     def OnRecenter(self, event):
-        centers = array([])
-        dspace = []
         
-        for circle in self.circles:
-            if not centers.size: centers = array([circle.center])
-            else: centers = vstack((centers, array([circle.center])))
-            dspace += [circle.dspace]
+        C = self.C
         
-        dspace = array(dspace)* 10**10    
-        dspace.sort()
-        print 1/dspace[-1]
-        
-        C = centers[:].sum(axis=0)/centers[:].shape[0]
-        
-        print centers, C
-        
-        self.intensity(self.pattern_open, C, self.imgcal, self.wavelen, self.camlen)
+        self.intensity(self.pattern_open, self.C, self.imgcal, self.wavelen, self.camlen)
         self.plot(3,'r')
         
         search_range = 2
-        divs = [[2,'g'],[1,'c'],[.5,'m']]
+        divs = [[4,'g'],[2,'c'],[1,'m']]
         dialog = wx.ProgressDialog('Recentering (May take a few minutes)', 
                 'Depending on the size of your image this may take a few minutes.', maximum = 27, parent = self)
         x = 0
         y = 0
-        for div in divs:
-            dialog.Update ( x + 1, 'On Division ' + str ( y + 1 ) + ' of ' + str(len(divs)) + '.' )
+        for i in range(20):
+            div = divs[y]
+            dialog.Update ( x*(y+1) + 1, 'On Division ' + str ( y + 1 ) + ' of ' + str(len(divs)) + '.' )
             clin = (arange(search_range + 1) - search_range/2) * div[0]
             C_arrayx = ones((search_range + 1,search_range + 1)) * (C[0] + clin).reshape(-1,1)
             C_arrayy = ones((search_range + 1,search_range + 1)) * (C[1] + clin)    
             C_array = c_[C_arrayx.reshape(-1,1),C_arrayy.reshape(-1,1)]
-            #print div, clin, C_array
+            print div, clin, C_array, C_array.shape
             peak=[]
+            peak_sctr_vec=[]
             
+            x=0
             for cen in C_array:
                 self.intensity(self.pattern_open, cen, self.imgcal, self.wavelen, self.camlen)
-                peak_i = self.peak_fit(1/dspace[-1])
+                peak_i = self.peak_fit(self.sctr_vec, fit_range = 4)
+                peak_sctr_vec += [self.t[peak_i]]
                 #print self.peak_parab[peak_i]
                 peak += [self.peak_parab[peak_i]]
                 self.plot(1,div[1])
-                dialog.Update ( x + 1 )
+                dialog.Update ( x*(y+1) + 1 )
                 x += 1
                 
             peak = array(peak)
             index = nonzero(peak == peak.max())
-        
-            print peak, peak.max(), C_array[index]
+            
+            print peak, peak.max(), C_array[index], peak_sctr_vec, array(peak_sctr_vec)[index] 
             C = C_array[index][0]
             self.C = C
-            y += 1
+            
+            self.sctr_vec = array(peak_sctr_vec)[index]
+            self.axes.vlines(self.sctr_vec,0,1)
+            self.axes.figure.canvas.draw()
+            
+            print index
+            if index[0] == 4:
+                y += 1
+            print 'y = ', y,'i = ', i 
+            if y>2 or i==19:
+                dialog.Update (27)
+                break
             
         self.intensity(self.pattern_open, C_array[index][0], self.imgcal, self.wavelen, self.camlen)
         
@@ -701,6 +708,40 @@ class radial(wx.Frame):
         
         points = abs(self.drdf - ax)
         i = points.argmin(0)
+        
+        #self.use_voigt = 1
+        
+        def power(d,p):
+            return(p[0]*d**(-p[1]))
+        
+        def voigt(x,p):
+            """\
+            voigt profile
+
+            V(x,sig,gam) = Re(w(z))/(sig*sqrt(2*pi))
+            z = (x+i*gam)/(sig*sqrt(2))
+             """
+            pos = 0
+            amp = p[0]
+            fwhm = p[1]
+            shape = p[2]
+            
+            tmp = 1/scipy.special.wofz(zeros((len(x))) \
+                +1j*sqrt(log(2.0))*shape).real
+            tmp = tmp*amp* \
+                scipy.special.wofz(2*sqrt(log(2.0))*(x-pos)/fwhm+1j* \
+                sqrt(log(2.0))*shape).real + p[3]
+            return tmp
+        
+        if self.use_voigt:
+            func = voigt
+            p0 = [2,0.0002,1000, 0]# initial guesses
+            self.back_fit_points = 5
+        else:
+            func = power
+            p0 = [10,1]# initial guesses
+            self.back_fit_points = 3
+        
             
         if event.xdata != None and event.ydata != None and event.button == 1:
             if not self.bgfitp.size: self.bgfitp = array([ax,self.rdf[i]])
@@ -713,20 +754,18 @@ class radial(wx.Frame):
             #axi.set_ylim(0, size[0])
             axi2.figure.canvas.draw()
 
-        if self.bgfitp.size >= 6:
+        if self.bgfitp.size >= (self.back_fit_points * 2):
     
             r = self.bgfitp[:,0]
             d = self.bgfitp[:,1]
             
-            def func(d,p):
-                return(p[0]*d**(-p[1]))
-    
             def residuals(p, r, d):
                 err = r - func(d, p)
                 return err
            
-            p0 = [10,1] # initial guesses
             guessfit = func(self.drdf,p0)
+            #axi2.plot(self.drdf,guessfit,'g')
+            
             pbest = leastsq(residuals,p0,args=(d,r),full_output=1)
             
             bestparams = pbest[0]
@@ -734,17 +773,22 @@ class radial(wx.Frame):
             print 'best fit parameters ',bestparams
             print cov_x
         
-            datafit = func(self.drdf,bestparams)
+            self.background = func(self.drdf,bestparams)
             
             #if plot_sub:
             #    axi2.lines.pop(-2)
             #    axi2.figure.canvas.draw()
             
-            plot_sub = axi2.plot(self.drdf,datafit,'r')
+            plot_sub = axi2.plot(self.drdf,self.background,'r')
             
             axi2.figure.canvas.draw()
             
-            self.rdf -= datafit
+            rdf_max = self.rdf.max()
+            
+            self.rdf -= self.background
+            
+            self.background[nonzero(self.background > rdf_max)] = rdf_max
+            plot_sub = axi2.plot(self.drdf,self.background,'m')
             
             start = nonzero(self.rdf>0)[0][0]
             
@@ -765,6 +809,7 @@ class radial(wx.Frame):
             print self.toolbar.fid
             self.toolbar.fid = self.canvas.mpl_disconnect(self.toolbar.fid)
             print self.toolbar.fid
+
     def OnClearPro(self,e):
         self.axes.cla()
         
@@ -1057,7 +1102,7 @@ class radial(wx.Frame):
 class Pro_Pref(wx.Dialog):
     def __init__(self, parent, id, title):
     
-        wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, 350))
+        wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(400, 400))
         
         self.parent = parent
         
@@ -1065,27 +1110,30 @@ class Pro_Pref(wx.Dialog):
         #wx.StaticText(self, -1, 'Latex Text Rendering: ', (20, 70))
         #wx.StaticText(self, -1, 'Show Polar Pattern: ', (20, 120))
         #wx.StaticText(self, -1, 'Polar Pattern Negative: ', (20, 170))    
-        wx.StaticText(self, -1, 'Polar Pattern Gamma: ', (20, 220))
+        wx.StaticText(self, -1, 'Polar Pattern Gamma: ', (20, 270))
         
         limit_string =     '%.2f' % self.parent.limit    
         self.limit_tc = wx.TextCtrl(self, -1, '',  (250, 15), (60, -1))
         self.limit_tc.SetValue(limit_string)        
+        
+        self.voigt_cb = wx.CheckBox(self, -1, 'Voigt for Background Sub (5 points)', (20, 65))
+        self.voigt_cb.SetValue(self.parent.use_voigt)
 
-        self.latex_cb = wx.CheckBox(self, -1, 'Latex Text Rendering', (20, 65))
+        self.latex_cb = wx.CheckBox(self, -1, 'Latex Text Rendering', (20, 115))
         self.latex_cb.SetValue(self.parent.latex)
         
-        self.polar_cb = wx.CheckBox(self, -1, 'Show Polar Pattern', (20, 115))
+        self.polar_cb = wx.CheckBox(self, -1, 'Show Polar Pattern', (20, 165))
         self.polar_cb.SetValue(self.parent.show_polar)
         
-        self.polar_neg_cb = wx.CheckBox(self, -1, 'Polar Pattern Negative', (20, 165))
+        self.polar_neg_cb = wx.CheckBox(self, -1, 'Polar Pattern Negative', (20, 215))
         self.polar_neg_cb.SetValue(self.parent.polar_neg)
         
-        self.gamma_tc = wx.TextCtrl(self, -1, '',  (250, 215), (60, -1))
+        self.gamma_tc = wx.TextCtrl(self, -1, '',  (250, 265), (60, -1))
         self.gamma_tc.SetValue(str(self.parent.gamma))                    
         
-        set_btn = wx.Button(self, 1, 'Set', (70, 275))
+        set_btn = wx.Button(self, 1, 'Set', (70, 325))
         set_btn.SetFocus()
-        close_btn = wx.Button(self, 2, 'Close', (185, 275))
+        close_btn = wx.Button(self, 2, 'Close', (185, 325))
 
         self.Bind(wx.EVT_BUTTON, self.OnSet, id=1)
         self.Bind(wx.EVT_BUTTON, self.OnClose, id=2)
@@ -1094,6 +1142,7 @@ class Pro_Pref(wx.Dialog):
     def OnSet(self, event):
         
         self.parent.limit = float(self.limit_tc.GetValue())
+        self.parent.use_voigt = self.voigt_cb.GetValue()
         self.parent.latex = self.latex_cb.GetValue()
         self.parent.show_polar = self.polar_cb.GetValue()
         self.parent.polar_neg = self.polar_neg_cb.GetValue()
