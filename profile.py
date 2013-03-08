@@ -59,6 +59,7 @@ ID_RSP=120
 ID_SIM2=121
 ID_PROSIM=122
 ID_RING=123
+ID_CLRPS=124
 
 #global radframe
 #global centers
@@ -303,6 +304,7 @@ class radial(wx.Frame):
         editmenu.Append(ID_PPREF, "&Profile Prefrences"," Edit profile prefrences and limits")        
         editmenu.Append(ID_CLRP, "&Clear Profiles"," Clear all except the last profile")        
         editmenu.Append(ID_CLRS, "&Remove Simulation"," Remove the last simulation")
+        editmenu.Append(ID_CLRPS, "R&emove Profile Sim"," Remove the profile simulation")
         
         # Setting up the menu. filemenu is a local variable at this stage.
         toolsmenu= wx.Menu()
@@ -372,6 +374,7 @@ class radial(wx.Frame):
         wx.EVT_MENU(self, ID_BSC, self.OnBeamStop)
         wx.EVT_MENU(self, ID_RSP, self.OnRemoveSpots)
         wx.EVT_MENU(self, ID_RING, self.OnRingPattern)
+        wx.EVT_MENU(self, ID_CLRPS, self.OnClearProSim)
         self.SetSizer(self.sizer)
         self.Fit()
 
@@ -827,6 +830,12 @@ class radial(wx.Frame):
     def OnClearPro(self,e):
         self.axes.cla()
         
+        self.plot(2)
+        self.axes.figure.canvas.draw()
+        
+    def OnClearProSim(self,e):
+        self.prosim = 0
+        self.axes.cla()
         self.plot(2)
         self.axes.figure.canvas.draw()
         
