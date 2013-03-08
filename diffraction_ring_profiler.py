@@ -37,6 +37,7 @@ from numpy.random import rand
 
 from numpy import *
 import scipy.constants as con
+from scipy.ndimage.filters import median_filter
 
 from matplotlib.pyplot import *
 import matplotlib.patches as patches
@@ -75,6 +76,7 @@ ID_INT=104
 ID_UNDO=108
 ID_PREF=109
 ID_CAL=110
+ID_PIX=111
 ID_EXIT=200
 
 
@@ -584,6 +586,7 @@ class diffaction_int(wx.Frame):
         # The & character indicates the short cut key
         toolsmenu.Append(ID_CAL, "&Calibrate"," Calibrate image resolution using marked rings and known d-spacing")
         toolsmenu.AppendSeparator()
+        toolsmenu.Append(ID_PIX, "&Dead Pixel Fix"," Remove dead and hot pixels from the pattern")
         #toolsmenu.Append(ID_MARK, "&Mark Rings"," Mark diffraction rings to find the pattern center")
         toolsmenu.Append(ID_INT, "&Profile"," Extract profiles from the diffraction pattern")
                     
@@ -657,6 +660,7 @@ class diffaction_int(wx.Frame):
         wx.EVT_MENU(self, ID_UNDO, self.OnUndo)
         wx.EVT_MENU(self, ID_PREF, self.OnPref)
         wx.EVT_MENU(self, ID_CAL, self.OnCal)
+        wx.EVT_MENU(self, ID_PIX, self.OnPix)
         
         self.SetSizer(self.sizer)
         self.Fit()
@@ -858,6 +862,36 @@ class diffaction_int(wx.Frame):
         else:
             print 'undo error'
         
+    def OnPix(self,e):
+        std_cutoff = 80
+        filter_size = 3
+        self.pattern_open, num_filter, pattern_diff = self.filter_outliers(self.pattern_open, filter_size, std_cutoff)
+        self.img.set_data(self.pattern_open)
+        self.canvas.draw()
+        print num_filter
+        #figure()
+        #imshow(pattern_diff, cmap='gray')
+        #show()
+        
+    def filter_outliers(self, pattern, filter_size, std_cutoff):
+        pattern[nonzero(pattern>1e9)] = 0
+        pattern_filter = median_filter(pattern,size=filter_size)
+        pattern_diff = pattern - pattern_filter
+        pattern_index = nonzero(logical_or(-std(pattern_diff)*std_cutoff+pattern_diff.mean() > pattern_diff, pattern_diff > std(pattern_diff)*std_cutoff+pattern_diff.mean()))
+        print pattern_index
+        if pattern[pattern_index].any():
+            pattern_final = np.copy(pattern)
+            print pattern_final[pattern_index]
+            num_filter = len(pattern_final[pattern_index])
+            print num_filter
+            pattern_final[pattern_index] = pattern_filter[pattern_index]
+            pattern_diff_final = pattern - pattern_final
+            print nonzero(pattern > pattern.max()*.8), pattern.max(), pattern_filter.max(), median(pattern_diff_final), (pattern_diff_final).max()
+        else:
+            pattern_final = copy(pattern)
+            num_filter = 0
+        return pattern_final, num_filter, pattern_diff
+
     def OnPref(self,e):
         dlg = Pref(self, -1, 'Preferences')
         dlg.Show(True)

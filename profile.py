@@ -906,8 +906,8 @@ class radial(wx.Frame):
         
         self.axes.figure.canvas.draw()
     def OnBeamStop(self,e):
-        if not self.plot_polar:
-            self.OnPolar(e)
+        #if not self.plot_polar:
+        self.OnPolar(e)
         self.rdf = self.psrdf
         self.drdf = self.dpmrdf
         
@@ -922,8 +922,8 @@ class radial(wx.Frame):
                 
                 
     def OnRemoveSpots(self,e):
-        if not self.plot_polar:
-            self.OnPolar(e)
+        #if not self.plot_polar:
+        self.OnPolar(e)
         self.rdf = self.prrdf
         self.drdf = self.dpmrdf
         
