@@ -3,7 +3,21 @@
 This program will measure electron diffraction rings
 and extract intensity profiles from the diffraction pattern.
 This program averages the centers of the rings you mark to find the center of the pattern.
+License: GPLv3 http://www.gnu.org/licenses/gpl.html
+http://code.google.com/p/diffraction-ring-profiler/
 """
+import wx
+import os
+import sys
+
+pathname = os.path.dirname(sys.argv[0])
+fullpath = os.path.abspath(pathname) 
+os.chdir(fullpath)
+args = sys.argv[1:] 
+
+print fullpath + "/configs/"
+os.environ['MPLCONFIGDIR'] = fullpath + "/configs/"
+
 
 from numpy import *
 
@@ -21,9 +35,6 @@ from matplotlib.backends.backend_wx import _load_bitmap, cursord
 from matplotlib.figure import Figure
 from numpy.random import rand
 
-import wx
-import os
-
 from numpy import *
 import scipy.constants as con
 
@@ -37,12 +48,8 @@ from matplotlib import rc
 
 import dm3lib_v099 as dm3
 
-import sys
+print matplotlib.get_configdir()
 
-pathname = os.path.dirname(sys.argv[0])
-fullpath = os.path.abspath(pathname) 
-os.chdir(fullpath)
-args = sys.argv[1:] 
 
 print args, fullpath
 #with file('log.txt', 'w') as outfile:
@@ -673,12 +680,12 @@ class diffaction_int(wx.Frame):
         info.Name = "Diffraction Ring Profiler"
         info.Version = "1.2"
         info.Copyright = "(C) 2011 Brian Olsen"
-        info.Description = "This program is for extracting intensity\n profiles from diffraction ring patterns\n\n"
+        info.Description = "This program is for extracting intensity\n profiles from diffraction ring patterns\n"
         info.WebSite = ("http://code.google.com/p/diffraction-ring-profiler/", "Diffraction Ring Profiler Website")
         info.Developers = [ "Brian Olsen"]
 
         # change the wx.ClientDC to use self.panel instead of self
-        info.License = 'Licensed under GPL 3.0'
+        info.License = 'Licensed under GPL 3.0 \n http://www.gnu.org/licenses/gpl.html'
 
         # Then we call wx.AboutBox giving it that info object
         wx.AboutBox(info)
