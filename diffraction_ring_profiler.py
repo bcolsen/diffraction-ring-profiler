@@ -97,9 +97,9 @@ class Circ:
         self.label_circle(axi)
         
     def label_circle(self, axi):
-        print (self.parent.imgcal / 2.54) * 100, self.parent.wavelen, float(self.parent.camlen) / 100
+        print self.parent.pixel_size #(self.parent.imgcal / 2.54) * 100, self.parent.wavelen, float(self.parent.camlen) / 100
 
-        self.dspace = ((self.parent.imgcal / 2.54) * 100) * self.parent.wavelen * (float(self.parent.camlen) / 100) / self.radius
+        self.dspace = 1/(self.radius * self.parent.pixel_size)  #dspace in meters
         
         print self.dspace
         self.dspacestr = ur'%.2f \u00c5' % (self.dspace * 10**10)
@@ -135,9 +135,10 @@ class Line:
         self.label_line(axi)
         
     def label_line(self, axi):
-        print (self.parent.imgcal / 2.54) * 100, self.parent.wavelen, float(self.parent.camlen) / 100
 
-        self.dspace = ((self.parent.imgcal / 2.54) * 100) * self.parent.wavelen * (float(self.parent.camlen) / 100) / self.linelen
+        print self.parent.pixel_size #(self.parent.imgcal / 2.54) * 100, self.parent.wavelen, float(self.parent.camlen) / 100
+
+        self.dspace = 1/(self.linelen * self.parent.pixel_size)  #dspace in meters
         
         print self.dspace
         self.dspacestr = ur'%.2f \u00c5' % (self.dspace * 10**10)
@@ -370,7 +371,7 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
 
     def _on_integrate(self, evt):
         print self.parent
-        profile.integrate(self.parent, self.parent.pattern_open, self.circles, self.parent.imgcal, self.parent.wavelen, self.parent.camlen, self.parent.size)
+        profile.integrate(self.parent, self.parent.pattern_open, self.circles, self.parent.pixel_size, self.parent.size)
         
     def _on_undo(self, evt):
         self.OnUndo(evt)
@@ -533,7 +534,8 @@ class diffaction_int(wx.Frame):
         self.img_con = Param(1, minimum=0.01, maximum=1.9)
         accvm = self.accv * 1000
         self.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2))) 
-        
+        self.PixelSize()
+        print self.pixel_size
         
         wx.Frame.__init__(self,None,-1,
             'Diffraction Ring Profiler',size=(550,350))
@@ -657,6 +659,10 @@ class diffaction_int(wx.Frame):
             self.filename = filename[0]
             self.openimage()
 
+    def PixelSize(self):
+        self.pixel_size = 1/(((self.imgcal / 2.54) * 100) * self.wavelen * (float(self.camlen) / 100)) #computes 1/m per pixel
+        #1/(2*sin(.5*(arctan((arange(B)*Dd)/((float(camlen) / 100)*((imgcal / 2.54) * 100))))))/(wavelen * 10**10)
+
     def OnPaint(self, event):
         self.canvas.draw()
         event.Skip()
@@ -723,6 +729,7 @@ class diffaction_int(wx.Frame):
             dm3f = dm3.DM3(os.path.join(self.dirname, self.filename))
             imageData = dm3f.getInfo()
             print imageData, dm3f.pxsize
+            
             self.pattern_open = dm3f.getImageData()
             #self.pattern_open = array(self.pattern_open)
             self.pattern_open.shape
@@ -733,6 +740,18 @@ class diffaction_int(wx.Frame):
             if imageData['mode'] == 'DIFFRACTION':
                 self.camlen = int(float(imageData['mag'])/10.0)
             print self.camlen, self.accv
+            
+            if dm3f.pxsize[0]:
+                if dm3f.pxsize[1] == '1/nm':
+                    self.pixel_size = dm3f.pxsize[0] * 10**9
+                elif dm3f.pxsize[1] == '1/A':
+                    self.pixel_size = dm3f.pxsize[0] * 10**10
+                elif dm3f.pxsize[1] == '1/m':
+                    self.pixel_size = dm3f.pxsize[0]
+                print '.dm3 set pixel_size:', self.pixel_size
+            else:
+                self.PixelSize()
+                print 'calculated pixel_size:', self.pixel_size
         else:
             im = Image.open(os.path.join(self.dirname, self.filename))
             Image._initialized=2
@@ -902,6 +921,8 @@ class Pref(wx.Dialog):
         self.parent.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2)))
         self.parent.imgcal = float(self.imgcal_tc.GetValue())
         
+        self.parent.PixelSize()
+        
         del self.parent.axes.texts[-len(circles)-len(lines):]
         
         for circle in circles:
@@ -1007,6 +1028,8 @@ class Cal(wx.Dialog):
         
         imagecal_text = '%.2f' % (self.parent.imgcal)
         self.imgcal_tc.SetLabel(imagecal_text)
+        
+        self.parent.PixelSize()
         
         del self.parent.axes.texts[-len(self.circles)-len(self.lines):]
         

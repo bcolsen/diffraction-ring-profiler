@@ -70,7 +70,7 @@ def reproject_image_into_polar(data, origin, boxs):
     r, theta = cart2polar(x, y)
     
     # Make a regular (in polar space) grid based on the min and max r & theta
-    r_i = linspace(0, boxs-1, nx)
+    r_i = arange(boxs) #linspace(0, boxs, nx)
     theta_i = linspace(theta.min(), theta.max(), ny)
     theta_grid, r_grid = meshgrid(theta_i, r_i)
 
@@ -88,8 +88,12 @@ def reproject_image_into_polar(data, origin, boxs):
     bands = []
     band = data.T
     zi = sp.ndimage.map_coordinates(band, coords, order=1)
-    bands = (zi.reshape((nx, ny)))
+    bands = (zi.reshape((boxs, ny)))
     output = bands
+    print output.shape[:2]
+    #plt.figure()
+    #plt.imshow(output)
+    #plt.show()
     pmrdf, psrdf, prrdf= polar_mean(output)
     return output[:,-boxs/2-boxs/3:-boxs/2+boxs/8], r_i, theta_i, pmrdf, psrdf, prrdf #[:,-boxs/2-boxs/2.5:-boxs/2+boxs/2.5]
 
@@ -142,7 +146,7 @@ def polar_mean(output):
     
     return out_mean, output.sum(axis=1)/ptv, out_median
     
-def make_profile_rings(pro_intens, theta_2, origin, boxs):
+def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     
     print origin
     #print Cr[0]-boxs,Cr[0]+boxs,Cr[1]-boxs,Cr[1]+boxs
@@ -152,30 +156,40 @@ def make_profile_rings(pro_intens, theta_2, origin, boxs):
     #nx = 2*len(pro_base)
     #print nx, boxs
     
-    origin = (len(theta_2), len(theta_2))
-    print origin
-    
-    pro_base = (2*sin(((theta_2/180)*pi)/2.))/.5
-    
-    pro_base_concat = concatenate((-pro_base[:0:-4],pro_base[::4]))
-    pro_base_concat = (pro_base_concat/pro_base.max()) * len(pro_base)
-    img_size = len(pro_base_concat)
-    
-#    plt.figure()
-#    plt.plot(pro_base, pro_intens, 'r')
+    if is_linear:
+        print origin, boxs
+        origin = (len(basis), len(basis))
+        pro_base_l = basis
+        pro_intens_l = pro_intens
+        img_size = boxs*2 #-9
+        lin_index = linspace(0,2*len(basis),img_size)-len(basis)
+        
+    else:
+        theta_2 = basis
+        origin = (len(theta_2), len(theta_2))
+        print origin
+        
+        pro_base = (2*sin(((theta_2/180)*pi)/2.))/.5
+        
+        pro_base_concat = concatenate((-pro_base[:0:-4],pro_base[::4]))
+        pro_base_concat = (pro_base_concat/pro_base.max()) * len(pro_base)
+        img_size = len(pro_base_concat)
+        
+    #    plt.figure()
+    #    plt.plot(pro_base, pro_intens, 'r')
 
-    pro_base_l = linspace(0,max(pro_base),len(pro_base))
-    
-#    plt.plot(pro_base_l, pro_intens, 'b')
+        pro_base_l = linspace(0,max(pro_base),len(pro_base))
+        
+    #    plt.plot(pro_base_l, pro_intens, 'b')
 
-    pro_intens_l = interp(pro_base_l, pro_base, pro_intens)
+        pro_intens_l = interp(pro_base_l, pro_base, pro_intens)
+        
+    #    plt.plot(pro_base_l, pro_intens_l, 'g.')
+    #    
+    #    plt.figure()
+    #    plt.plot(pro_base_concat)
     
-#    plt.plot(pro_base_l, pro_intens_l, 'g.')
-#    
-#    plt.figure()
-#    plt.plot(pro_base_concat)
-    
-    lin_index = linspace(0,2*len(pro_base),img_size)-len(pro_base)
+        lin_index = linspace(0,2*len(pro_base),img_size)-len(pro_base)
     
 #    plt.plot(lin_index)
 	
@@ -225,10 +239,10 @@ def make_profile_rings(pro_intens, theta_2, origin, boxs):
     output = bands
     #pmrdf, psrdf, prrdf= polar_mean(output)
     
-#    plt.figure()
-#    plt.imshow(output, cmap='gray')
-#    plt.plot(origin[0]/4,origin[1]/4,'+')
-#    plt.show()
+    #plt.figure()
+    #plt.imshow(output, cmap='gray')
+    #plt.plot(origin[0]/4,origin[1]/4,'+')
+    #plt.show()
     
     return output
 

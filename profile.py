@@ -63,14 +63,14 @@ ID_RING=123
 #global radframe
 #global centers
 
-def integrate(frame, pattern_open, circles, imgcal, wavelen, camlen, size):
+def integrate(frame, pattern_open, circles, pixel_size, size):
     
 #    global radframe
     print frame
     if pattern_open.any(): 
         if circles:
             print 'Integration started. please wait...'
-            radframe = radial(frame, pattern_open, circles, imgcal, wavelen, camlen, size)
+            radframe = radial(frame, pattern_open, circles, pixel_size, size)
             radframe.Show(True)
         else:
             error_cir = 'Please mark at lease one ring.'
@@ -244,7 +244,7 @@ print cursord
 
 class radial(wx.Frame):
 
-    def __init__(self, parent, pattern_open, circles, imgcal, wavelen, camlen, size):
+    def __init__(self, parent, pattern_open, circles, pixel_size, size):
         wx.Frame.__init__(self,parent,-1,
             "Intensity Profile - "+parent.filename ,size=(550,350))
                 
@@ -256,14 +256,15 @@ class radial(wx.Frame):
         self.plot_sim = 0
         self.prosim = 0
         
-        self.dirname = parent.dirname
-        self.filename = parent.filename
         self.parent = parent
+        
+        self.dirname = self.parent.dirname
+        self.filename = self.parent.filename
         self.pattern_open = pattern_open
         self.circles = circles
-        self.imgcal = imgcal 
-        self.wavelen = wavelen
-        self.camlen = camlen
+        
+        self.pixel_size = pixel_size
+        
         self.plot_polar = 0
         self.show_polar = 1
         self.limit = 0
@@ -273,6 +274,7 @@ class radial(wx.Frame):
         self.angstrom = u'\u00c5'
         self.sctr_vec = 0
         self.use_voigt = 1
+        self.background_sub = 0
             
         # dirname is an APPLICATION variable that we're choosing to store
         # in with the frame - it's the parent directory for any file we
@@ -373,10 +375,10 @@ class radial(wx.Frame):
         self.SetSizer(self.sizer)
         self.Fit()
 
-        self.center(pattern_open, circles, imgcal, wavelen, camlen)
+        self.center(pattern_open, circles, pixel_size)
         self.plot()
     
-    def center(self, pattern_open, circles, imgcal, wavelen, camlen):
+    def center(self, pattern_open, circles, pixel_size):
         
         centers = array([])
         dspace = []
@@ -396,7 +398,7 @@ class radial(wx.Frame):
         self.C = C
         print centers, C
         
-        self.intensity(pattern_open, C, imgcal, wavelen, camlen)
+        self.intensity(pattern_open, C, pixel_size)
         
         self.rdfb = [self.rdf.copy()]
         self.drdfb = [self.drdf.copy()]
@@ -405,7 +407,7 @@ class radial(wx.Frame):
         
         C = self.C
         
-        self.intensity(self.pattern_open, self.C, self.imgcal, self.wavelen, self.camlen)
+        self.intensity(self.pattern_open, self.C, self.pixel_size)
         self.plot(3,'r')
         
         search_range = 2
@@ -414,6 +416,8 @@ class radial(wx.Frame):
                 'Depending on the size of your image this may take a few minutes.', maximum = 27, parent = self)
         x = 0
         y = 0
+        cilist = zeros(9) #list of center index...looking for duplicates
+        
         for i in range(20):
             div = divs[y]
             dialog.Update ( x*(y+1) + 1, 'On Division ' + str ( y + 1 ) + ' of ' + str(len(divs)) + '.' )
@@ -421,13 +425,13 @@ class radial(wx.Frame):
             C_arrayx = ones((search_range + 1,search_range + 1)) * (C[0] + clin).reshape(-1,1)
             C_arrayy = ones((search_range + 1,search_range + 1)) * (C[1] + clin)    
             C_array = c_[C_arrayx.reshape(-1,1),C_arrayy.reshape(-1,1)]
-            print div, clin, C_array, C_array.shape
+            #print div, clin, C_array, C_array.shape
             peak=[]
             peak_sctr_vec=[]
             
             x=0
             for cen in C_array:
-                self.intensity(self.pattern_open, cen, self.imgcal, self.wavelen, self.camlen)
+                self.intensity(self.pattern_open, cen, self.pixel_size)
                 peak_i = self.peak_fit(self.sctr_vec, fit_range = 4)
                 peak_sctr_vec += [self.t[peak_i]]
                 #print self.peak_parab[peak_i]
@@ -439,7 +443,7 @@ class radial(wx.Frame):
             peak = array(peak)
             index = nonzero(peak == peak.max())
             
-            print peak, peak.max(), C_array[index], peak_sctr_vec, array(peak_sctr_vec)[index] 
+            #print peak, peak.max(), C_array[index], peak_sctr_vec, array(peak_sctr_vec)[index] 
             C = C_array[index][0]
             self.C = C
             
@@ -450,12 +454,19 @@ class radial(wx.Frame):
             print index
             if index[0] == 4:
                 y += 1
-            print 'y = ', y,'i = ', i 
+                cilist = zeros(9)
+            else:
+                cilist[index[0]] += 1
+            if (cilist > 1).any():
+                print 'LOOP CONDITION AVERTED'
+                y += 1
+                cilist = zeros(9)
+            print 'y = ', y,'i = ', i , cilist
             if y>2 or i==19:
                 dialog.Update (27)
                 break
             
-        self.intensity(self.pattern_open, C_array[index][0], self.imgcal, self.wavelen, self.camlen)
+        self.intensity(self.pattern_open, C_array[index][0], self.pixel_size)
         
         self.rdfb += [self.rdf.copy()]
         self.drdfb += [self.drdf.copy()]
@@ -465,7 +476,7 @@ class radial(wx.Frame):
         self.plot(5,'k')        
         self.axes.figure.canvas.draw()
             
-    def intensity(self, pattern_open, C, imgcal, wavelen, camlen):
+    def intensity(self, pattern_open, C, pixel_size):
         
         Nx = pattern_open.shape[1]
         Ny = pattern_open.shape[0]
@@ -486,7 +497,7 @@ class radial(wx.Frame):
         #x = random.rand(N)*lx
         #y = random.rand(N)*ly
         
-        print Nx, Ny, boxs, Dd, C, len(range(Nx)), len(range(Ny))
+        #print Nx, Ny, boxs, Dd, C, len(range(Nx)), len(range(Ny))
         
         y = ((ones((Ny,Nx)) * arange(Ny).reshape(-1,1)) - C[1])**2
         x = ((ones((Ny,Nx)) * arange(Nx)) - C[0])**2
@@ -497,14 +508,15 @@ class radial(wx.Frame):
         r = arange(B)
         #print d, pattern_open/255.
         with Timer():
-            self.rdf, bin_edge = histogram(d, bins = B, range=(0,B-1), weights=pattern_open/float(pattern_open.max()))
-        #print rdf, rdf.size, bin_edge, bin_edge.size
+            self.rdf, bin_edge = histogram(d, bins = B, range=(0,B), weights=pattern_open/float(pattern_open.max()))
+        #print self.rdf, rdf.size, bin_edge, bin_edge.size
 
         r[0] = 1
         self.rdf /= r
+        
+        self.rdf_max = self.rdf.max()
                 
-        self.drdf = (arange(B)*Dd)/(((imgcal / 2.54) * 100) * wavelen * (float(camlen) / 100) * 10**10)
-        #self.drdf = 2*sin(.5*(arctan((arange(B)*Dd)/((float(camlen) / 100)*((imgcal / 2.54) * 100)))))/(wavelen * 10**10)
+        self.drdf = (arange(B)*Dd) * (pixel_size / 10**10)
         
         #print self.rdf
         #print self.rdf, self.drdf , len(self.rdf), len(self.drdf)
@@ -755,7 +767,9 @@ class radial(wx.Frame):
             axi2.figure.canvas.draw()
 
         if self.bgfitp.size >= (self.back_fit_points * 2):
-    
+            
+            self.background_sub = 1
+            
             r = self.bgfitp[:,0]
             d = self.bgfitp[:,1]
             
@@ -787,8 +801,8 @@ class radial(wx.Frame):
             
             self.rdf -= self.background
             
-            self.background[nonzero(self.background > rdf_max)] = rdf_max
-            plot_sub = axi2.plot(self.drdf,self.background,'m')
+            #self.background[nonzero(self.background > rdf_max)] = rdf_max
+            #plot_sub = axi2.plot(self.drdf,self.background,'m')
             
             start = nonzero(self.rdf>0)[0][0]
             
@@ -857,12 +871,12 @@ class radial(wx.Frame):
         rdf = array(self.rdf)
         drdf = array(self.drdf)
         #print pmrdf.shape, psrdf.max()
-        self.dpmrdf = linspace(drdf.min(), drdf.max(), pmrdf.shape[0])
+        self.dpmrdf = arange(pmrdf.shape[0])*(self.pixel_size / 10**10)
         #print dpmrdf.shape
     
-        rdf /= rdf.max()
-        pmrdf /= pmrdf.max()
-        self.psrdf /= self.psrdf.max()
+        #rdf /= rdf.max()
+        #pmrdf /= pmrdf.max()
+        #self.psrdf /= self.psrdf.max()
         
         self.rdf = rdf
         self.drdf = drdf
@@ -874,6 +888,8 @@ class radial(wx.Frame):
         
         self.rdf = pmrdf
         self.drdf = self.dpmrdf
+        
+        self.rdf_max = self.rdf.max()
         
         self.rdfb += [self.rdf.copy()]
         self.drdfb += [self.drdf.copy()]
@@ -895,6 +911,8 @@ class radial(wx.Frame):
         self.rdf = self.psrdf
         self.drdf = self.dpmrdf
         
+        self.rdf_max = self.rdf.max()
+        
         self.rdfb += [self.rdf.copy()]
         self.drdfb += [self.drdf.copy()]        
         
@@ -908,6 +926,8 @@ class radial(wx.Frame):
             self.OnPolar(e)
         self.rdf = self.prrdf
         self.drdf = self.dpmrdf
+        
+        self.rdf_max = self.rdf.max()
         
         self.rdfb += [self.rdf.copy()]
         self.drdfb += [self.drdf.copy()]        
