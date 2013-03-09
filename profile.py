@@ -416,14 +416,15 @@ class radial(wx.Frame):
         search_range = 2
         divs = [[4,'g'],[2,'c'],[1,'m']]
         dialog = wx.ProgressDialog('Recentering (May take a few minutes)', 
-                'Depending on the size of your image this may take a few minutes.', maximum = 27, parent = self)
-        x = 0
+                'Depending on the size of your image this may take a few minutes.', maximum = 28, parent = self)
+
         y = 0
         cilist = zeros(9) #list of center index...looking for duplicates
         
         for i in range(20):
+            x=0
             div = divs[y]
-            dialog.Update ( x*(y+1) + 1, 'On Division ' + str ( y + 1 ) + ' of ' + str(len(divs)) + '.' )
+            dialog.Update ( x + y*len(cilist), 'On Division ' + str ( y + 1 ) + ' of ' + str(len(divs)) + '.' )
             clin = (arange(search_range + 1) - search_range/2) * div[0]
             C_arrayx = ones((search_range + 1,search_range + 1)) * (C[0] + clin).reshape(-1,1)
             C_arrayy = ones((search_range + 1,search_range + 1)) * (C[1] + clin)    
@@ -432,7 +433,6 @@ class radial(wx.Frame):
             peak=[]
             peak_sctr_vec=[]
             
-            x=0
             for cen in C_array:
                 self.intensity(self.pattern_open, cen, self.pixel_size)
                 peak_i = self.peak_fit(self.sctr_vec, fit_range = 4)
@@ -440,7 +440,7 @@ class radial(wx.Frame):
                 #print self.peak_parab[peak_i]
                 peak += [self.peak_parab[peak_i]]
                 self.plot(1,div[1])
-                dialog.Update ( x*(y+1) + 1 )
+                dialog.Update ( x + y*len(cilist))
                 x += 1
                 
             peak = array(peak)
@@ -458,15 +458,16 @@ class radial(wx.Frame):
             if index[0] == 4:
                 y += 1
                 cilist = zeros(9)
-            else:
+            elif index[0] == 3 or index[0] == 5:
                 cilist[index[0]] += 1
+            print cilist
             if (cilist > 1).any():
                 print 'LOOP CONDITION AVERTED'
                 y += 1
                 cilist = zeros(9)
-            print 'y = ', y,'i = ', i , cilist
+            print 'y = ', y,'i = ', i
             if y>2 or i==19:
-                dialog.Update (27)
+                dialog.Update (28)
                 break
             
         self.intensity(self.pattern_open, C_array[index][0], self.pixel_size)
