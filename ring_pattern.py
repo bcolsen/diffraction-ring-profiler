@@ -166,11 +166,6 @@ class ring_pattern(wx.Frame):
         self.Fit()
         
         self.ring_plot()
-
-
-#    def onCheckMenu(self,event): 
-#        if event.GetId() == self.id: event.Check(true) 
-#        else: event.Check(false) 
         
     def OnBGSub(self, event):
         #self.id = event.GetId() 

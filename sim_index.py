@@ -14,6 +14,8 @@ class Sim_Index(scrolled.ScrolledPanel):
         
         self.sdrdf = simulation.sdrdf#[2.5,1.5,1,.8,2.5,1.5,1,.8,2.5,1.5,1,.8,2.5,1.5,1,.8]
         self.sdrdflen = len(self.sdrdf)
+        
+        self.srdf = simulation.srdf
 
         #fcc_sim = [111,122,220,400,111,122,220,400,111,122,220,400,111,122,220,400]
         self.peak_index_labels = simulation.peak_index_labels
@@ -45,10 +47,14 @@ class Sim_Index(scrolled.ScrolledPanel):
         offset = 4
         sp = 30
         i = offset
-        for peak in self.sdrdf:
-            static = wx.StaticText(self, -1, 'd-spacing '+str(i-offset+1)+':', (20, sp*i+5))
+        for peak, intens in zip(self.sdrdf,self.srdf):
+            static = wx.StaticText(self, -1, str(i-offset+1) + '-', (20, sp*i+5))
+            static1 = wx.StaticText(self, -1, 'd:', (60, sp*i+5))
             dspace = 1/peak
-            wx.StaticText(self, -1, str('%.2f' % dspace) + u' \u00c5', (135, sp*i+5))
+            wx.StaticText(self, -1, str('%.2f' % dspace) + u' \u00c5', (75, sp*i+5))
+            
+            static2 = wx.StaticText(self, -1,'i:', (140, sp*i+5))
+            wx.StaticText(self, -1, str('%.2f' % intens), (153, sp*i+5))
             i += 1
 
         vbox.Add((250,sp*i+5), wx.EXPAND, 0)
