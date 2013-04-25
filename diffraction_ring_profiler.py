@@ -22,8 +22,19 @@ os.environ['MPLCONFIGDIR'] = fullpath + "/configs/"
 from numpy import *
 
 import matplotlib
-import Image
-import TiffImagePlugin
+mpl_version = matplotlib.__version__
+
+from distutils.version import LooseVersion as V
+
+if V(mpl_version) >= V('1.2'):
+    mpl_old = False
+else:
+    mpl_old = True
+    
+print mpl_old
+
+from PIL import Image
+from PIL import TiffImagePlugin
 
 import copy
 
@@ -272,7 +283,6 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         self.lines = []
         self.hist = ['start']
         
-        
         NavigationToolbar2WxAgg.__init__(self, canvas)
         
         self.statbar = None
@@ -280,6 +290,9 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         self.OnUndo = OnUndo
         self.parent = parent
         
+        if self.parent.mpl_old:
+           self.wx_ids = {'Pan' : self._NTB2_PAN,'Zoom': self._NTB2_ZOOM}
+           
         self.AddSeparator()
         
         self.AddCheckTool(self.ON_MARKRINGS, _load_bitmap(os.path.join(self.parent.iconspath, '3_point.png')),
@@ -300,20 +313,20 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         wx.EVT_TOOL(self, self.ON_UNDO, self._on_undo)
         
     def zoom(self, *args):
-        self.ToggleTool(self._NTB2_PAN, False)
+        self.ToggleTool(self.wx_ids['Pan'], False)
         self.ToggleTool(self.ON_MARKRINGS, False)
         self.ToggleTool(self.ON_MARKSPOTS, False)
         NavigationToolbar2WxAgg.zoom(self, *args)
 
     def pan(self, *args):
-        self.ToggleTool(self._NTB2_ZOOM, False)
+        self.ToggleTool(self.wx_ids['Zoom'], False)
         self.ToggleTool(self.ON_MARKRINGS, False)
         self.ToggleTool(self.ON_MARKSPOTS, False)
         NavigationToolbar2WxAgg.pan(self, *args)
             
     def _on_markrings(self, evt):
-        self.ToggleTool(self._NTB2_ZOOM, False)
-        self.ToggleTool(self._NTB2_PAN, False)
+        self.ToggleTool(self.wx_ids['Zoom'], False)
+        self.ToggleTool(self.wx_ids['Pan'], False)
         self.ToggleTool(self.ON_MARKSPOTS, False)
         #frame.canvas.mpl_disconnect(cid)
         print 'Select 3 points on a ring to mark it'
@@ -347,8 +360,8 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
             self.set_message(self.mode)
 
     def _on_markspots(self, evt):
-        self.ToggleTool(self._NTB2_ZOOM, False)
-        self.ToggleTool(self._NTB2_PAN, False)
+        self.ToggleTool(self.wx_ids['Zoom'], False)
+        self.ToggleTool(self.wx_ids['Pan'], False)
         self.ToggleTool(self.ON_MARKRINGS, False)
 
         print 'Select 2 spots to measure the distance'
@@ -526,6 +539,8 @@ class diffaction_int(wx.Frame):
         
         self.fullpath = fullpath
         self.iconspath = os.path.join(self.fullpath,'icons')
+        
+        self.mpl_old = mpl_old
         
         im = Image.open(os.path.join(self.iconspath, 'diff_profile_text.png'))
         im = im.convert('L')

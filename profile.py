@@ -108,6 +108,9 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         
         self.parent = parent
         
+        if self.parent.mpl_old:
+           self.wx_ids = {'Pan' : self._NTB2_PAN,'Zoom': self._NTB2_ZOOM}
+        
         self.AddSeparator()
         
         self.AddCheckTool(self.ON_LABELPEAKS, _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_label.png')),
@@ -125,20 +128,20 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         wx.EVT_TOOL(self, self.ON_UNDO, self._on_undo)
         
     def zoom(self, *args):
-        self.ToggleTool(self._NTB2_PAN, False)
+        self.ToggleTool(self.wx_ids['Pan'], False)
         self.ToggleTool(self.ON_LABELPEAKS, False)
         NavigationToolbar2WxAgg.zoom(self, *args)
 
     def pan(self, *args):
-        self.ToggleTool(self._NTB2_ZOOM, False)
+        self.ToggleTool(self.wx_ids['Zoom'], False)
         self.ToggleTool(self.ON_LABELPEAKS, False)
         NavigationToolbar2WxAgg.pan(self, *args)
 
     def _on_labelpeaks(self, evt):
         print 'Select peaks to label'
         
-        self.ToggleTool(self._NTB2_ZOOM, False)
-        self.ToggleTool(self._NTB2_PAN, False)
+        self.ToggleTool(self.wx_ids['Zoom'], False)
+        self.ToggleTool(self.wx_ids['Pan'], False)
         
         #eid = radframe.canvas.mpl_connect('button_press_event', onclick_lable)
         
@@ -258,6 +261,8 @@ class radial(wx.Frame):
         self.prosim = 0
         
         self.parent = parent
+        
+        self.mpl_old = self.parent.mpl_old
         
         self.dirname = self.parent.dirname
         self.filename = self.parent.filename
