@@ -732,7 +732,7 @@ class diffaction_int(wx.Frame):
         # application. In theory, you could create one earlier, store it in
         # your frame object and change it when it was called to reflect
         # current parameters / values
-        dlg = wx.FileDialog(self, "Choose a diffraction image", self.dirname, "", "Image Files|*.tif;*.TIF;*.jpg;*.JPG;*.png;*.PNG;*.bmp;*.BMP;*.dm3;*.DM3|All Files|*.*", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a diffraction image", self.dirname, "", "Image Files|*.tif;*.TIF;*.tiff;*.TIFF;*.jpg;*.JPG;*.png;*.PNG;*.bmp;*.BMP;*.dm3;*.DM3|All Files|*.*", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
@@ -781,19 +781,29 @@ class diffaction_int(wx.Frame):
         else:
             im = Image.open(os.path.join(self.dirname, self.filename))
             Image._initialized=2
-            
+            print im.mode
+            #im.show()
             if im.mode=='L':
                 # return MxN luminance array
+                print 'luminance'
                 x_str = im.tostring('raw',im.mode,0,1)
                 self.pattern_open = fromstring(x_str,uint8)
                 self.pattern_open.shape = im.size[1], im.size[0]
             elif im.mode=='I;16':
                 # return MxN luminance array
+                print 'I;16'
                 x_str = im.tostring('raw',im.mode,0,1)
                 self.pattern_open = fromstring(x_str,uint16)
                 self.pattern_open.shape = im.size[1], im.size[0]
+            elif im.mode=='I;16B':
+                # return MxN luminance array
+                print 'I;16'
+                x_str = im.tostring('raw',im.mode,0,1)
+                self.pattern_open = fromstring(x_str,'>u2')
+                self.pattern_open.shape = im.size[1], im.size[0]
             else:
                 # return MxN luminance array
+                print 'convert'
                 try:
                     im = im.convert('L')
                     x_str = im.tostring('raw',im.mode,0,1)
@@ -813,7 +823,7 @@ class diffaction_int(wx.Frame):
                     self.SetTitle("Diffraction Ring Profiler")
                     return
 
-        #log_pattern = log(1+a*self.pattern_open)#/log(1+a*pattern).max()*255
+        #log_pattern = log(1+0.001*self.pattern_open)#/log(1+a*pattern).max()*255
         self.size = self.pattern_open.shape
         print 'shape: ', self.size
                     
