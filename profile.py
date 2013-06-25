@@ -581,7 +581,7 @@ class radial(wx.Frame):
                 #print sim, max(sim[1:]), min(sim[1:]), sim_norm
                 self.axes.vlines(simulation.sdrdf, 0, sim_norm*simulation.sim_intens, sim_color ,linewidth = 2, zorder = 2)
                 #sim_index = nonzero(self.srdfb[i]!=0)
-                points += [self.axes.plot(simulation.sdrdf, sim_norm*simulation.sim_intens, marker[col_index],  c=sim_color, ms = 8, zorder = 3)]
+                points += [self.axes.plot(simulation.sdrdf, sim_norm*simulation.sim_intens, marker[col_index],  c=sim_color, ms = 8, zorder = 3)[0]]
                 for i,label in enumerate(simulation.peak_index_labels):
                     #print label
                     if label:
