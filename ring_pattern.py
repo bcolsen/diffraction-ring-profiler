@@ -46,7 +46,7 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         NavigationToolbar2WxAgg.__init__(self, canvas)
         
         self.parent = parent
-        
+           
     def mouse_move(self, event):
         #print 'mouse_move', event.button
                 
@@ -77,6 +77,8 @@ class ring_pattern(wx.Frame):
         self.SetIcon(icon1)
         
         self.parent = parent
+        
+        self.mpl_old = self.parent.mpl_old
         
         self.background_sub = self.parent.background_sub
         self.prosim = self.parent.prosim
@@ -157,7 +159,9 @@ class ring_pattern(wx.Frame):
         self.toolbar.update()        
         
         # Define the code to be run when a menu option is selected
-        self.Bind(wx.EVT_MENU, self.toolbar.save, self.Save_evt)
+        if self.mpl_old:
+            self.Bind(wx.EVT_MENU, self.toolbar.save, self.Save_evt)
+        self.Bind(wx.EVT_MENU, self.toolbar.save_figure, self.Save_evt)
         self.Bind(wx.EVT_MENU, self.OnBGSub, self.BGSub_evt)
         self.Bind(wx.EVT_MENU, self.OnProSim, self.ProSim_evt)
         self.Bind(wx.EVT_MENU, self.OnPeakSim, self.PeakSim_evt)
@@ -281,7 +285,7 @@ class ring_pattern(wx.Frame):
             sim = simulation.srdf
             sim_norm = sim/float(max(sim))
             #print sim, max(sim[1:]), min(sim[1:]), sim_norm
-            marks += [self.axes.plot(0,0,'-',color=sim_color, zorder = -10)]
+            marks += [self.axes.plot(0,0,'-',color=sim_color, zorder = -10)[0]]
             rect = Rectangle((-self.parent.limit,-self.parent.limit),self.parent.limit,self.parent.limit, facecolor="none", edgecolor="none")
             self.axes.add_patch(rect)
             if not simulation.peak_index_labels:
