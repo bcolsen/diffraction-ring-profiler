@@ -15,8 +15,22 @@ fullpath = os.path.abspath(pathname)
 os.chdir(fullpath)
 args = sys.argv[1:] 
 
-print fullpath + "/configs/"
-os.environ['MPLCONFIGDIR'] = fullpath + "/configs/"
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+MPL_config_dir = resource_path("configs")
+
+if not os.path.exists(MPL_config_dir):
+    os.makedirs(MPL_config_dir)
+
+os.environ['MPLCONFIGDIR'] =  MPL_config_dir
 
 
 from numpy import *
@@ -538,7 +552,7 @@ class diffaction_int(wx.Frame):
     def __init__(self, filename = None):
         
         self.fullpath = fullpath
-        self.iconspath = os.path.join(self.fullpath,'icons')
+        self.iconspath = resource_path('icons')
         
         self.mpl_old = mpl_old
         

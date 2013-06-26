@@ -256,6 +256,7 @@ class radial(wx.Frame):
         icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
         
         self.SetIcon(icon1)
+        
         self.simulations = []
         self.plot_sim = 0
         self.prosim = 0

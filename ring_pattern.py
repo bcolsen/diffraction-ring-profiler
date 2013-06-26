@@ -71,12 +71,12 @@ class ring_pattern(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self,parent,-1,"Ring Figure - "+parent.filename ,size=(550,350))
                 
-        iconFile = "icons/diff_profiler_ico.ico"
+        self.parent = parent
+        
+        iconFile = os.path.join(parent.parent.iconspath, "diff_profiler_ico.ico")
         icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
         
         self.SetIcon(icon1)
-        
-        self.parent = parent
         
         self.mpl_old = self.parent.mpl_old
         
