@@ -86,10 +86,7 @@ class ring_pattern(wx.Frame):
         self.ring_patt = []
         self.back_patt = []
         
-        # dirname is an APPLICATION variable that we're choosing to store
-        # in with the frame - it's the parent directory for any file we
-        # choose to edit in this frame
-        self.dirname = ''
+        self.dirname = self.parent.dirname
 
         self.statbar = self.CreateStatusBar() # A Statusbar in the bottom of the window
         self.statbar.SetFieldsCount(2)

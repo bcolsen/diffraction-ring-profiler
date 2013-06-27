@@ -283,10 +283,6 @@ class radial(wx.Frame):
         self.use_voigt = 1
         self.background_sub = 0
             
-        # dirname is an APPLICATION variable that we're choosing to store
-        # in with the frame - it's the parent directory for any file we
-        # choose to edit in this frame
-        self.dirname = ''
 
         self.statbar = self.CreateStatusBar() # A Statusbar in the bottom of the window
         self.statbar.SetFieldsCount(2)
@@ -966,13 +962,13 @@ class radial(wx.Frame):
             img_con16 = 0.0001
                         
             filename=dlg.GetFilename()
-            dirname=dlg.GetDirectory()
+            self.dirname=dlg.GetDirectory()
             
-            print dirname
+            print self.dirname
             
             #print count, centers, circle
             
-            im = Image.open(os.path.join(dirname, filename))
+            im = Image.open(os.path.join(self.dirname, filename))
             
             name, ext = os.path.splitext(filename)
             
@@ -1041,12 +1037,12 @@ class radial(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
                         
             filename=dlg.GetFilename()
-            dirname=dlg.GetDirectory()
+            self.dirname=dlg.GetDirectory()
             name, ext = os.path.splitext(filename)
-            print dirname
+            print self.dirname
             
             try:
-                sim_open = loadtxt(os.path.join(dirname, filename),skiprows=0)
+                sim_open = loadtxt(os.path.join(self.dirname, filename),skiprows=0)
             except:
                 dlg.Destroy()
                 error_file = 'File must be an exported GDIS Graph.'
@@ -1086,12 +1082,12 @@ class radial(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
                         
             filename=dlg.GetFilename()
-            dirname=dlg.GetDirectory()
+            self.dirname=dlg.GetDirectory()
             name, ext = os.path.splitext(filename)
-            print dirname
+            print self.dirname
             
             try:
-                sim_open = loadtxt(os.path.join(dirname, filename),skiprows=0)
+                sim_open = loadtxt(os.path.join(self.dirname, filename),skiprows=0)
             except:
                 dlg.Destroy()
                 error_file = 'Image must be a Digital Microscopist screen shot.'

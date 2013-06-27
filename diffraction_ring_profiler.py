@@ -592,7 +592,7 @@ class diffaction_int(wx.Frame):
         # dirname is an APPLICATION variable that we're choosing to store
         # in with the frame - it's the parent directory for any file we
         # choose to edit in this frame
-        self.dirname = ''
+        self.dirname = self.fullpath
 
         self.statbar = self.CreateStatusBar() # A Statusbar in the bottom of the window
         self.statbar.SetFieldsCount(2)
@@ -765,10 +765,9 @@ class diffaction_int(wx.Frame):
         self.toolbar.point3 = array([])
         
         self.canvas.mpl_disconnect(self.toolbar.cid)
-        if self.dirname == '':
-            self.dirname, self.filename = os.path.split( self.filename )
+        self.dirname, self.filename = os.path.split( self.filename )
         name, ext = os.path.splitext( self.filename )            
-        print ext, name, self.dirname
+        print self.dirname, name, ext
         
         if ext=='.dm3' or ext=='.DM3':
             dm3f = dm3.DM3(os.path.join(self.dirname, self.filename))
