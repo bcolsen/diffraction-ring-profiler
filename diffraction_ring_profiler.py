@@ -701,7 +701,7 @@ class diffaction_int(wx.Frame):
         
         if filename:
             print filename[0]
-            self.filename = filename[0]
+            self.dirname, self.filename = os.path.split(os.path.abspath(filename[0]))
             self.openimage()
 
     def PixelSize(self):
@@ -765,9 +765,9 @@ class diffaction_int(wx.Frame):
         self.toolbar.point3 = array([])
         
         self.canvas.mpl_disconnect(self.toolbar.cid)
-        self.dirname, self.filename = os.path.split( self.filename )
+        
         name, ext = os.path.splitext( self.filename )            
-        print self.dirname, name, ext
+        print self.dirname, name, ext, os.path.join(self.dirname, self.filename)
         
         if ext=='.dm3' or ext=='.DM3':
             dm3f = dm3.DM3(os.path.join(self.dirname, self.filename))
