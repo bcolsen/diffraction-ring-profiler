@@ -10,11 +10,6 @@ import wx
 import os
 import sys
 
-pathname = os.path.dirname(sys.argv[0])
-fullpath = os.path.abspath(pathname) 
-os.chdir(fullpath)
-args = sys.argv[1:] 
-
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -24,6 +19,16 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+try:
+    fullpath = sys._MEIPASS
+except Exception:
+    fullpath = os.path.abspath(os.path.dirname("sys.argv[0]"))
+
+print fullpath
+os.chdir(fullpath)
+
+args = sys.argv[1:] 
 
 MPL_config_dir = resource_path("configs")
 
