@@ -327,7 +327,7 @@ class radial(wx.Frame):
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
         # Note - previous line stores the whole of the menu into the current object
         
-        self.SetBackgroundColour(wx.NamedColor("WHITE"))
+        self.SetBackgroundColour(wx.NamedColour("WHITE"))
 
         self.figure = Figure(dpi=76)
         self.axes = self.figure.add_subplot(111)
@@ -336,26 +336,18 @@ class radial(wx.Frame):
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
+        
         # Capture the paint message
         wx.EVT_PAINT(self, self.OnPaint)
 
         self.toolbar = MyNavigationToolbar2(self, self.canvas, True)
         self.toolbar.Realize()
-        if wx.Platform == '__WXMAC__':
-            # Mac platform (OSX 10.3, MacPython) does not seem to cope with
-            # having a toolbar in a sizer. This work-around gets the buttons
-            # back, but at the expense of having the toolbar at the top
-            self.SetToolBar(self.toolbar)
-        else:
-            # On Windows platform, default window size is incorrect, so set
-            # toolbar width to figure width.
-            tw, th = self.toolbar.GetSizeTuple()
-            fw, fh = self.canvas.GetSizeTuple()
-            # By adding toolbar in sizer, we are able to put it at the bottom
-            # of the frame - so appearance is closer to GTK version.
-            # As noted above, doesn't work for Mac.
-            self.toolbar.SetSize(wx.Size(fw, th))
-            self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
+        
+        tw, th = self.toolbar.GetSizeTuple()
+        fw, fh = self.canvas.GetSizeTuple()
+        self.toolbar.SetSize(wx.Size(fw, th))
+        self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
+        
         # update the axes menu on the toolbar
         self.toolbar.update()
         
@@ -1020,7 +1012,7 @@ class radial(wx.Frame):
                 dlg.Destroy()
             else:
                 dlg.Destroy()
-                error_file = 'Image must be a Digital Microscopist screen shot.'
+                error_file = 'Image must be a Desktop Microscopist screen shot.'
                 print error_file
                 error_int_dlg = Error(self, -1, 'Error', error_file)
                 error_int_dlg.Show(True)
@@ -1090,7 +1082,7 @@ class radial(wx.Frame):
                 sim_open = loadtxt(os.path.join(self.dirname, filename),skiprows=0)
             except:
                 dlg.Destroy()
-                error_file = 'Image must be a Digital Microscopist screen shot.'
+                error_file = 'File must be an exported GDIS Graph.'
                 print error_file
                 error_int_dlg = Error(self, -1, 'Error', error_file)
                 error_int_dlg.Show(True)

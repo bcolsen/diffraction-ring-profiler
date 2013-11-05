@@ -2,7 +2,7 @@ from numpy import *
 import scipy as sp
 import scipy.ndimage
 
-import Image
+from PIL import Image
 
 import matplotlib.pyplot as plt
 
