@@ -32,7 +32,7 @@ import time
 
 class Timer():
    def __enter__(self): self.start = time.time()
-   def __exit__(self, *args): print time.time() - self.start
+   def __exit__(self, *args): print(time.time() - self.start)
 
 from matplotlib import rc
 
@@ -48,7 +48,7 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         self.parent = parent
            
     def mouse_move(self, event):
-        #print 'mouse_move', event.button
+        #print('mouse_move', event.button)
                 
         if event.inaxes:
 
@@ -123,7 +123,7 @@ class ring_pattern(wx.Frame):
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
         # Note - previous line stores the whole of the menu into the current object
         
-        self.SetBackgroundColour(wx.NamedColour("WHITE"))
+        self.SetBackgroundColour(wx.Colour("WHITE"))
 
         self.figure = Figure(figsize=(6,6), dpi=76)
         self.axes = self.figure.add_axes([0,0,1,1],yticks=[],xticks=[],frame_on=False)#
@@ -134,13 +134,13 @@ class ring_pattern(wx.Frame):
         self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
         
         # Capture the paint message
-        wx.EVT_PAINT(self, self.OnPaint)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
         
         self.toolbar = MyNavigationToolbar2(self, self.canvas, True)
         self.toolbar.Realize()
 
-        tw, th = self.toolbar.GetSizeTuple()
-        fw, fh = self.canvas.GetSizeTuple()
+        tw, th = self.toolbar.GetSize()
+        fw, fh = self.canvas.GetSize()
         self.toolbar.SetSize(wx.Size(fw, th))
         self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
             
@@ -205,7 +205,7 @@ class ring_pattern(wx.Frame):
         self.origin =  [round(self.parent.C[1]), round(self.parent.C[0])]
         
         #self.pattern_open_crop = self.parent.pattern_open[origin[0]-(self.parent.boxs-6):origin[0]+(self.parent.boxs-3),origin[1]-(self.parent.boxs-6):origin[1]+(self.parent.boxs-3)]
-        self.pattern_open_crop = self.parent.pattern_open[self.origin[0]-(self.parent.boxs):self.origin[0]+(self.parent.boxs),self.origin[1]-(self.parent.boxs):self.origin[1]+(self.parent.boxs)]
+        self.pattern_open_crop = self.parent.pattern_open[int(self.origin[0]-(self.parent.boxs)):int(self.origin[0]+(self.parent.boxs)),int(self.origin[1]-(self.parent.boxs)):int(self.origin[1]+(self.parent.boxs))]
         
         if self.background_sub == 1: 
             self.do_background_sub()
@@ -234,8 +234,8 @@ class ring_pattern(wx.Frame):
             #figure()
             #imshow(self.back_patt, cmap = 'gray')
             #show()
-            print self.pattern_open_crop.shape, self.back_patt.shape, self.origin
-            print self.parent.rdf.max(), self.back_patt.max(), self.pattern_open_crop.max(), self.parent.rdf_max
+            print(self.pattern_open_crop.shape, self.back_patt.shape, self.origin)
+            print(self.parent.rdf.max(), self.back_patt.max(), self.pattern_open_crop.max(), self.parent.rdf_max)
             
             middle_x = self.back_patt.shape[1]/2
             
@@ -255,31 +255,31 @@ class ring_pattern(wx.Frame):
         self.pattern_open_crop[self.pattern_open_crop < 0] = 0
         #plot(self.pattern_open_crop[:,middle_x])
         #show()
-        print self.pattern_open_crop.min(), self.pattern_open_crop.max()
+        print(self.pattern_open_crop.min(), self.pattern_open_crop.max())
         
     def do_plot_sim(self):
         sim_name = []
         marks = []
         color = ['#42D151','#2AA298','#E7E73C']
         marker = ['o','^','s']
-        print len(self.parent.simulations)#, self.srdfb
+        print(len(self.parent.simulations))#, self.srdfb
         if len(self.parent.simulations) >= 3:
             sim_len_i = 3
         else:
             sim_len_i = len(self.parent.simulations)
-        print sim_len_i#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
+        print(sim_len_i)#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
         for col_index, simulation in enumerate(self.parent.simulations[-sim_len_i:]):
             sim_color = simulation.sim_color if simulation.sim_color else color[col_index]
             sim_name += [simulation.sim_label]
             sim = simulation.srdf
             sim_norm = sim/float(max(sim))
-            #print sim, max(sim[1:]), min(sim[1:]), sim_norm
+            #print(sim, max(sim[1:]), min(sim[1:]), sim_norm)
             marks += [self.axes.plot(0,0,'-',color=sim_color, zorder = -10)[0]]
             rect = Rectangle((-self.parent.limit,-self.parent.limit),self.parent.limit,self.parent.limit, facecolor="none", edgecolor="none")
             self.axes.add_patch(rect)
             if not simulation.peak_index_labels:
                 for radius in simulation.sdrdf:
-                    #print radius
+                    #print(radius)
                     circ_mark = patches.Circle((0,0), radius, fill = 0 , color=sim_color, linewidth = 2, alpha=.7)
                     self.axes.add_patch(circ_mark)
                     circ_mark.set_clip_path(rect)
@@ -288,7 +288,7 @@ class ring_pattern(wx.Frame):
             else:
                 j=0
                 for i,label in enumerate(simulation.peak_index_labels[::-1]):
-                    #print label
+                    #print(label)
                     if label:
                         circ_mark = patches.Circle((0,0), simulation.sdrdf[::-1][i], fill = 0 , color=sim_color, linewidth = 2, alpha=.7)
                         self.axes.add_patch(circ_mark)
@@ -299,7 +299,7 @@ class ring_pattern(wx.Frame):
                             label = r'('+label+')'
                         else:
                             label = r'$\mathsf{('+label.replace('-',r'\bar ')+')}$'
-                        #print label
+                        #print(label)
                         bbox_props = dict(boxstyle="round", fc=sim_color, ec="0.5", alpha=1, lw=1.5)
                         arrowprops=dict(arrowstyle="wedge,tail_width=1.",
                             fc=sim_color, ec="0.5",
@@ -313,7 +313,7 @@ class ring_pattern(wx.Frame):
                         an.draggable()
                         j+=1
 
-        print sim_name, marks 
+        print(sim_name, marks)
         leg = self.axes.legend(marks , sim_name, loc='upper left', shadow=0, fancybox=True, numpoints=1, prop={'size':16})    
         frame = leg.get_frame()
         frame.set_alpha(0.7)
@@ -325,5 +325,5 @@ class ring_pattern(wx.Frame):
             self.ring_patt = make_profile_rings(self.parent.prosim_int, self.parent.prosim_theta_2, self.origin, self.parent.boxs)
         self.axes.imshow(self.ring_patt[:,:self.ring_patt.shape[1]/2], cmap='gray', origin='lower',
             extent=(-self.parent.prosim_inv_d.max(), 0, -self.parent.prosim_inv_d.max(), self.parent.prosim_inv_d.max()))
-        print self.parent.prosim_inv_d.max()
+        print(self.parent.prosim_inv_d.max())
 

@@ -19,9 +19,9 @@ def plot_polar_pattern(data, origin, boxs, rdf, drdf):
     
     rdf = array(rdf)
     drdf = array(drdf)
-    print pmrdf.shape, psrdf.max()
+    print(pmrdf.shape, psrdf.max())
     dpmrdf = linspace(drdf.min(), drdf.max(), pmrdf.shape[0])
-    print dpmrdf.shape
+    print(dpmrdf.shape)
     
     rdf /= rdf.max()
     pmrdf /= pmrdf.max()
@@ -50,20 +50,20 @@ def reproject_image_into_polar(data, origin, boxs):
     "origin" is a tuple of (x0, y0) and defaults to the center of the image."""
         
     Cr = around(origin)
-    print origin
-    #print Cr[0]-boxs,Cr[0]+boxs,Cr[1]-boxs,Cr[1]+boxs
+    print(origin)
+    #print(Cr[0]-boxs,Cr[0]+boxs,Cr[1]-boxs,Cr[1]+boxs)
 
     #data = data[int(Cr[0]-boxs):int(Cr[0]+boxs),int(Cr[1]-boxs):int(Cr[1]+boxs)]
         
     ny, nx = data.shape[:2]
-    print data.shape[:2], boxs
+    print(data.shape[:2], boxs)
     
     #plt.figure()
     #plt.imshow(data,cmap='gray')
     
     #origin = (nx//2, ny//2)
     origin = origin[::-1]
-    print origin
+    print(origin)
 	
     # Determine that the min and max r and theta coords will be...
     x, y = index_coords(data, origin=origin)
@@ -81,21 +81,21 @@ def reproject_image_into_polar(data, origin, boxs):
     xi, yi = xi.flatten(), yi.flatten()
     coords = vstack((xi, yi)) # (map_coordinates requires a 2xn array)
 	
-    #print coords.shape
+    #print(coords.shape)
 	
     # Reproject each band individually and the restack
     # (uses less memory than reprojection the 3-dimensional array in one step)
     bands = []
     band = data.T
     zi = sp.ndimage.map_coordinates(band, coords, order=1)
-    bands = (zi.reshape((boxs, ny)))
+    bands = (zi.reshape((int(boxs), ny)))
     output = bands
-    print output.shape[:2]
+    print(output.shape[:2])
     #plt.figure()
     #plt.imshow(output)
     #plt.show()
     pmrdf, psrdf, prrdf= polar_mean(output)
-    return output[:,-boxs/2-boxs/3:-boxs/2+boxs/8], r_i, theta_i, pmrdf, psrdf, prrdf #[:,-boxs/2-boxs/2.5:-boxs/2+boxs/2.5]
+    return output[:,int(-boxs/2-boxs/3):int(-boxs/2+boxs/8)], r_i, theta_i, pmrdf, psrdf, prrdf #[:,-boxs/2-boxs/2.5:-boxs/2+boxs/2.5]
 
 def index_coords(data, origin):
     """Creates x & y coords for the indicies in a numpy array "data".
@@ -104,8 +104,8 @@ def index_coords(data, origin):
     ny, nx = data.shape[:2]
     origin_x, origin_y = origin
     x, y = meshgrid(arange(nx), arange(ny))
-    x -= origin_x
-    y -= origin_y
+    x -= origin_x.astype(int64)
+    y -= origin_y.astype(int64)
     return x, y
     
 def cart2polar(x, y):
@@ -119,28 +119,28 @@ def polar2cart(r, theta):
     return x, y
     
 def polar_mean(output):
-    #print output.shape[:2]
+    #print(output.shape[:2])
     pr, pt = output.shape[:2]
     
-    #print output[:50,:250], output[-50:,:250]
+    #print(output[:50,:250], output[-50:,:250])
     out_mean = output.mean(axis=1)
     ptv = []
     
     index = (output[:,:50]>out_mean[50]).nonzero()
-    #print index, len(index), len(index[0])
-    #print output[50].shape, output[50], out_mean[50]*.5
+    #print(index, len(index), len(index[0]))
+    #print(output[50].shape, output[50], out_mean[50]*.5)
     
     for i in range(pr):
         index = (output[i]>out_mean[i]*.4).nonzero()
-        #print len(index)
+        #print(len(index))
         ptv += [float(len(index[0]))]
         
-    #print output[:50,:250], output[-50:,:250]
+    #print(output[:50,:250], output[-50:,:250])
     
-    #print len(ptv),ptv
+    #print(len(ptv),ptv)
     ptv = array(ptv)
     ptv[ptv==0]=1
-    #print len(ptv),ptv
+    #print(len(ptv),ptv)
     
     out_median = median(output, axis=1)
     
@@ -148,16 +148,16 @@ def polar_mean(output):
     
 def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     
-    print origin
-    #print Cr[0]-boxs,Cr[0]+boxs,Cr[1]-boxs,Cr[1]+boxs
+    print(origin)
+    #print(Cr[0]-boxs,Cr[0]+boxs,Cr[1]-boxs,Cr[1]+boxs)
 
     #data = data[int(Cr[0]-boxs):int(Cr[0]+boxs),int(Cr[1]-boxs):int(Cr[1]+boxs)]
     
     #nx = 2*len(pro_base)
-    #print nx, boxs
+    #print(nx, boxs)
     
     if is_linear:
-        print origin, boxs
+        print(origin, boxs)
         origin = (len(basis), len(basis))
         pro_base_l = basis
         pro_intens_l = pro_intens
@@ -167,7 +167,7 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     else:
         theta_2 = basis
         origin = (len(theta_2), len(theta_2))
-        print origin
+        print(origin)
         
         pro_base = (2*sin(((theta_2/180)*pi)/2.))/.5
         
@@ -203,7 +203,7 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     x_l,y_l = meshgrid(lin_index,lin_index)
     r_l, theta_l = cart2polar(x_l, y_l)
     
-#    print r, r.max()
+#    print(r, r.max())
 #    plt.figure()
 #    plt.imshow(r, cmap='gray')
 #    plt.figure()
@@ -226,9 +226,9 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     r_l = r_l.flatten()
     coords = vstack((r_l, zeros(len(r_l)))) # (map_coordinates requires a 2xn array)
     
-    print coords
+    print(coords)
 	
-    #print coords.shape
+    #print(coords.shape)
 	
     # Reproject each band individually and the restack
     # (uses less memory than reprojection the 3-dimensional array in one step)
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     intensity = data[:,1]
     intensity /= intensity.max()
 
-    print data.shape, len(theta_2), len(intensity)
+    print(data.shape, len(theta_2), len(intensity))
     
     make_profile_rings(intensity, theta_2, (100,100), 200)
     

@@ -34,7 +34,7 @@ import time
 
 class Timer():
    def __enter__(self): self.start = time.time()
-   def __exit__(self, *args): print time.time() - self.start
+   def __exit__(self, *args): print(time.time() - self.start)
 
 from matplotlib import rc
 
@@ -67,21 +67,21 @@ ID_CLRPS=124
 def integrate(frame, pattern_open, circles, pixel_size, size):
     
 #    global radframe
-    print frame
+    print(frame)
     if pattern_open.any(): 
         if circles:
-            print 'Integration started. please wait...'
+            print('Integration started. please wait...')
             radframe = radial(frame, pattern_open, circles, pixel_size, size)
             radframe.Show(True)
         else:
             error_cir = 'Please mark at lease one ring.'
-            print error_cir
+            print(error_cir)
             error_int_dlg = Error(frame, -1, 'Error', error_cir)
             error_int_dlg.Show(True)
             error_int_dlg.Centre()
     else:
         error_pat = 'Please open a diffraction image file.'
-        print error_pat
+        print(error_pat)
         error_int_dlg = Error(frame, -1, 'Error', error_pat)
         error_int_dlg.Show(True)
         error_int_dlg.Centre()
@@ -112,20 +112,29 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
            self.wx_ids = {'Pan' : self._NTB2_PAN,'Zoom': self._NTB2_ZOOM}
         
         self.AddSeparator()
-        
-        self.AddCheckTool(self.ON_LABELPEAKS, _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_label.png')),
+        if 'phoenix' in wx.PlatformInfo:
+            self.AddCheckTool(self.ON_LABELPEAKS, 'Label Peaks', _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_label.png')),
                 shortHelp= 'Label Peaks',longHelp= 'Click on a peak to label the d-spacing')
-        
+        else:
+            self.AddCheckTool(self.ON_LABELPEAKS, _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_label.png')),
+                shortHelp= 'Label Peaks',longHelp= 'Click on a peak to label the d-spacing')
+        self.Bind(wx.EVT_TOOL, self._on_labelpeaks, id=self.ON_LABELPEAKS)
         self.AddSeparator()
-        
-        wx.EVT_TOOL(self, self.ON_LABELPEAKS, self._on_labelpeaks)
-        self.AddSimpleTool(self.ON_CLEAR, _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_good.png')),
+        if 'phoenix' in wx.PlatformInfo:
+            self.AddTool(self.ON_CLEAR, 'Clear Profiles', _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_good.png')),
+                        'Clear all except the last profile')
+        else:
+            self.AddSimpleTool(self.ON_CLEAR, _load_bitmap(os.path.join(self.parent.parent.iconspath, 'profile_good.png')),
                         'Clear Profiles', 'Clear all except the last profile')
-        wx.EVT_TOOL(self, self.ON_CLEAR, self._on_clear)
+        self.Bind(wx.EVT_TOOL, self._on_clear, id=self.ON_CLEAR)
         undo_ico = wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR, (16,16))
-        self.AddSimpleTool(self.ON_UNDO, undo_ico,
+        if 'phoenix' in wx.PlatformInfo:
+            self.AddTool(self.ON_UNDO, 'Undo', undo_ico,
+                         'Go back to the previous profile')
+        else:
+            self.AddSimpleTool(self.ON_UNDO, undo_ico,
                         'Undo', 'Go back to the previous profile')
-        wx.EVT_TOOL(self, self.ON_UNDO, self._on_undo)
+        self.Bind(wx.EVT_TOOL, self._on_undo, id=self.ON_UNDO)
         
     def zoom(self, *args):
         self.ToggleTool(self.wx_ids['Pan'], False)
@@ -138,7 +147,7 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         NavigationToolbar2WxAgg.pan(self, *args)
 
     def _on_labelpeaks(self, evt):
-        print 'Select peaks to label'
+        print('Select peaks to label')
         
         self.ToggleTool(self.wx_ids['Zoom'], False)
         self.ToggleTool(self.wx_ids['Pan'], False)
@@ -169,15 +178,15 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
 
     def _on_subtract(self, evt):
         self.parent.bgfitp = array([])
-        print 'Select points on the background'
+        print('Select points on the background')
         try:
-            #print self.fid
+            #print(self.fid)
             if self.fid != None:
                 self.fid = self.canvas.mpl_disconnect(self.fid)
             self.fid = self.canvas.mpl_connect('button_press_event', self.parent.onclick_fitback)
         except AttributeError:
             self.fid = self.canvas.mpl_connect('button_press_event', self.parent.onclick_fitback)
-        #print self.fid
+        #print(self.fid)
         
     def _on_clear(self, evt):
         self.parent.OnClearPro(evt)
@@ -187,7 +196,7 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
 
 
     def mouse_move(self, event):
-        #print 'mouse_move', event.button
+        #print('mouse_move', event.button)
 
         if not event.inaxes or not self._active:
             if self._lastCursor != cursors.POINTER:
@@ -227,7 +236,7 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         else: self.parent.statbar.SetStatusText(self.mode,1)
         
     def set_cursor(self, cursor):
-        cursor =wx.StockCursor(cursord[cursor])
+        cursor =wx.Cursor(cursord[cursor])
         self.canvas.SetCursor( cursor )
 
 # cursors
@@ -235,7 +244,7 @@ class Cursors:  #namespace
     HAND, POINTER, SELECT_REGION, MOVE, BULLSEYE = range(5)
 cursors = Cursors()
 
-#print cursord
+#print(cursord)
 cursord = {
     cursors.MOVE : wx.CURSOR_HAND,
     cursors.HAND : wx.CURSOR_HAND,
@@ -244,7 +253,7 @@ cursord = {
     cursors.BULLSEYE : wx.CURSOR_BULLSEYE,        
     }
     
-print cursord
+print(cursord)
 
 class radial(wx.Frame):
 
@@ -327,7 +336,7 @@ class radial(wx.Frame):
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
         # Note - previous line stores the whole of the menu into the current object
         
-        self.SetBackgroundColour(wx.NamedColour("WHITE"))
+        self.SetBackgroundColour(wx.Colour("WHITE"))
 
         self.figure = Figure(dpi=76)
         self.axes = self.figure.add_subplot(111)
@@ -338,7 +347,7 @@ class radial(wx.Frame):
         self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
         
         # Capture the paint message
-        wx.EVT_PAINT(self, self.OnPaint)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
 
         self.toolbar = MyNavigationToolbar2(self, self.canvas, True)
         self.toolbar.Realize()
@@ -352,23 +361,23 @@ class radial(wx.Frame):
         self.toolbar.update()
         
         # Define the code to be run when a menu option is selected
-        wx.EVT_MENU(self, ID_SAVE, self.OnSave)
-        wx.EVT_MENU(self, ID_SIM, self.OnSimOpen)
-        wx.EVT_MENU(self, ID_SIM2, self.OnSim2Open)
-        wx.EVT_MENU(self, ID_PROSIM, self.OnProSimOpen)
-        wx.EVT_MENU(self, ID_LABEL, self.toolbar._on_labelpeaks)    
-        wx.EVT_MENU(self, ID_SUB, self.toolbar._on_subtract)
-        wx.EVT_MENU(self, ID_RECEN, self.OnRecenter)
-        wx.EVT_MENU(self, ID_CLRP, self.OnClearPro)
-        wx.EVT_MENU(self, ID_PUN, self.OnUndo)
-        wx.EVT_MENU(self, ID_POL, self.OnPolar)
-        wx.EVT_MENU(self, ID_SIML, self.OnSimLabel)
-        wx.EVT_MENU(self, ID_PPREF, self.OnPro_Pref)
-        wx.EVT_MENU(self, ID_CLRS, self.OnClearSim)        
-        wx.EVT_MENU(self, ID_BSC, self.OnBeamStop)
-        wx.EVT_MENU(self, ID_RSP, self.OnRemoveSpots)
-        wx.EVT_MENU(self, ID_RING, self.OnRingPattern)
-        wx.EVT_MENU(self, ID_CLRPS, self.OnClearProSim)
+        self.Bind(wx.EVT_MENU, self.OnSave, id=ID_SAVE)
+        self.Bind(wx.EVT_MENU, self.OnSimOpen, id=ID_SIM)
+        self.Bind(wx.EVT_MENU, self.OnSim2Open, id=ID_SIM2)
+        self.Bind(wx.EVT_MENU, self.OnProSimOpen, id=ID_PROSIM)
+        self.Bind(wx.EVT_MENU, self.toolbar._on_labelpeaks, id=ID_LABEL)
+        self.Bind(wx.EVT_MENU, self.toolbar._on_subtract, id=ID_SUB)
+        self.Bind(wx.EVT_MENU, self.OnRecenter, id=ID_RECEN)
+        self.Bind(wx.EVT_MENU, self.OnClearPro, id=ID_CLRP)
+        self.Bind(wx.EVT_MENU, self.OnUndo, id=ID_PUN)
+        self.Bind(wx.EVT_MENU, self.OnPolar, id=ID_POL)
+        self.Bind(wx.EVT_MENU, self.OnSimLabel, id=ID_SIML)
+        self.Bind(wx.EVT_MENU, self.OnPro_Pref, id=ID_PPREF)
+        self.Bind(wx.EVT_MENU, self.OnClearSim, id=ID_CLRS)
+        self.Bind(wx.EVT_MENU, self.OnBeamStop, id=ID_BSC)
+        self.Bind(wx.EVT_MENU, self.OnRemoveSpots, id=ID_RSP)
+        self.Bind(wx.EVT_MENU, self.OnRingPattern, id=ID_RING)
+        self.Bind(wx.EVT_MENU, self.OnClearProSim, id=ID_CLRPS)
         self.SetSizer(self.sizer)
         self.Fit()
 
@@ -387,13 +396,13 @@ class radial(wx.Frame):
         
         dspace = array(dspace)* 10**10    
         dspace.sort()
-        print 1/dspace[-1]
+        print(1/dspace[-1])
         
         self.sctr_vec = 1/dspace[-1]
         
         C = centers[:].sum(axis=0)/centers[:].shape[0]
         self.C = C
-        print centers, C
+        print(centers, C)
         
         self.intensity(pattern_open, C, pixel_size)
         
@@ -423,7 +432,7 @@ class radial(wx.Frame):
             C_arrayx = ones((search_range + 1,search_range + 1)) * (C[0] + clin).reshape(-1,1)
             C_arrayy = ones((search_range + 1,search_range + 1)) * (C[1] + clin)    
             C_array = c_[C_arrayx.reshape(-1,1),C_arrayy.reshape(-1,1)]
-            #print div, clin, C_array, C_array.shape
+            #print(div, clin, C_array, C_array.shape)
             peak=[]
             peak_sctr_vec=[]
             
@@ -431,7 +440,7 @@ class radial(wx.Frame):
                 self.intensity(self.pattern_open, cen, self.pixel_size)
                 peak_i = self.peak_fit(self.sctr_vec, fit_range = 4)
                 peak_sctr_vec += [self.t[peak_i]]
-                #print self.peak_parab[peak_i]
+                #print(self.peak_parab[peak_i])
                 peak += [self.peak_parab[peak_i]]
                 self.plot(1,div[1])
                 dialog.Update ( x + y*len(cilist))
@@ -440,7 +449,7 @@ class radial(wx.Frame):
             peak = array(peak)
             index = nonzero(peak == peak.max())
             
-            #print peak, peak.max(), C_array[index], peak_sctr_vec, array(peak_sctr_vec)[index] 
+            #print(peak, peak.max(), C_array[index], peak_sctr_vec, array(peak_sctr_vec)[index])
             C = C_array[index][0]
             self.C = C
             
@@ -448,18 +457,18 @@ class radial(wx.Frame):
             self.axes.vlines(self.sctr_vec,0,1)
             self.axes.figure.canvas.draw()
             
-            print index
+            print(index)
             if index[0] == 4:
                 y += 1
                 cilist = zeros(9)
             elif index[0] == 3 or index[0] == 5:
                 cilist[index[0]] += 1
-            print cilist
+            print(cilist)
             if (cilist > 1).any():
-                print 'LOOP CONDITION AVERTED'
+                print('LOOP CONDITION AVERTED')
                 y += 1
                 cilist = zeros(9)
-            print 'y = ', y,'i = ', i
+            print('y = ', y,'i = ', i)
             if y>2 or i==19:
                 dialog.Update (28)
                 break
@@ -478,7 +487,7 @@ class radial(wx.Frame):
         
         Nx = pattern_open.shape[1]
         Ny = pattern_open.shape[0]
-        print C, C[0], C[1]        
+        print(C, C[0], C[1]        )
         boxx = Nx/2. - abs(Nx/2. - C[0])-2
         boxy = Ny/2. - abs(Ny/2. - C[1])-2
         if boxx <= boxy:
@@ -495,19 +504,19 @@ class radial(wx.Frame):
         #x = random.rand(N)*lx
         #y = random.rand(N)*ly
         
-        #print Nx, Ny, boxs, Dd, C, len(range(Nx)), len(range(Ny))
+        #print(Nx, Ny, boxs, Dd, C, len(range(Nx)), len(range(Ny)))
         
         y = ((ones((Ny,Nx)) * arange(Ny).reshape(-1,1)) - C[1])**2
         x = ((ones((Ny,Nx)) * arange(Nx)) - C[0])**2
         with Timer():
             d = around(sqrt(x + y)/Dd)
-        #print d.shape
+        #print(d.shape)
 
         r = arange(B)
-        #print d, pattern_open/255.
+        #print(d, pattern_open/255.)
         with Timer():
             self.rdf, bin_edge = histogram(d, bins = B, range=(0,B), weights=pattern_open/float(pattern_open.max()))
-        #print self.rdf, rdf.size, bin_edge, bin_edge.size
+        #print(self.rdf, rdf.size, bin_edge, bin_edge.size)
 
         r[0] = 1
         self.rdf /= r
@@ -516,8 +525,8 @@ class radial(wx.Frame):
                 
         self.drdf = (arange(B)*Dd) * (pixel_size / 10**10)
         
-        #print self.rdf
-        #print self.rdf, self.drdf , len(self.rdf), len(self.drdf)
+        #print(self.rdf)
+        #print(self.rdf, self.drdf , len(self.rdf), len(self.drdf))
         
     def plot(self, lw=1, col='b'):
         
@@ -538,12 +547,12 @@ class radial(wx.Frame):
         self.axes.set_xlabel('Scattering Vector (1/'+self.angstrom+')')
         self.axes.set_ylabel('Intensity')
         self.axes.set_yticks([])
-        #print "Press 'm' mark peaks."
+        #print("Press 'm' mark peaks.")
         #axi2.set_xlim(0,5)
         if self.plot_polar and self.show_polar:
             if self.polar_neg: cmap='binary'
             else: cmap='gray'
-            #print cmap, self.polar_neg
+            #print(cmap, self.polar_neg)
             log_polar = rot90(log(1+self.gamma*self.polar_grid))
             self.axes.imshow(log_polar, cmap=cmap, origin='lower',
                 extent=(0, self.drdf.max(), 0, self.rdf.max()+self.rdf.max()*.2))
@@ -556,34 +565,34 @@ class radial(wx.Frame):
             sim_name = []
             color = ['#42D151','#2AA298','#E7E73C']
             marker = ['o','^','s']
-            print len(self.simulations)#, self.srdfb
+            print(len(self.simulations))#, self.srdfb
             if len(self.simulations) >= 3:
                 sim_len_i = 3
             else:
                 sim_len_i = len(self.simulations)
-            print sim_len_i#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
+            print(sim_len_i)#,self.srdfb[sim_len_i[0]],self.sdrdfb[sim_len_i[0]]
             for col_index, simulation in enumerate(self.simulations[-sim_len_i:]):
                 sim_color = simulation.sim_color if simulation.sim_color else color[col_index]
                 sim_name += [simulation.sim_label]
                 sim = simulation.srdf
                 sim_norm = sim/float(max(sim))
-                #print sim, max(sim[1:]), min(sim[1:]), sim_norm
+                #print(sim, max(sim[1:]), min(sim[1:]), sim_norm)
                 self.axes.vlines(simulation.sdrdf, 0, sim_norm*simulation.sim_intens, sim_color ,linewidth = 2, zorder = 2)
                 #sim_index = nonzero(self.srdfb[i]!=0)
                 points += [self.axes.plot(simulation.sdrdf, sim_norm*simulation.sim_intens, marker[col_index],  c=sim_color, ms = 8, zorder = 3)[0]]
                 for i,label in enumerate(simulation.peak_index_labels):
-                    #print label
+                    #print(label)
                     if label:
                         if label.find('-') == -1:
                             label = r'('+label+')'
                         else:
                             label = r'$\mathsf{('+label.replace('-',r'\bar ')+')}$'
-                        #print label
+                        #print(label)
                         bbox_props = dict(boxstyle="round", fc=sim_color, ec="0.5", alpha=0.7)
                         self.axes.text(simulation.sdrdf[i], sim_norm[i]*simulation.sim_intens + .05, label, ha="center", va="bottom", size=10, rotation=90, zorder = 100,
                             bbox=bbox_props)
         
-            print sim_name, points 
+            print(sim_name, points )
             leg = self.axes.legend(points , sim_name, loc='upper right', shadow=0, fancybox=True, numpoints=1)    
             frame = leg.get_frame()
             frame.set_alpha(0.4)
@@ -607,7 +616,7 @@ class radial(wx.Frame):
     # Open the file, do an RU sure check for an overwrite!
         filename = os.path.splitext(self.filename)
         dlg = wx.FileDialog(self, "Choose a file", self.dirname, filename[0] + '.txt', "*.*", \
-            wx.SAVE | wx.OVERWRITE_PROMPT)
+            wx.FD_SAVE | wx.OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             # Grab the content to be saved
             #itcontains = self.control.GetValue()
@@ -629,11 +638,11 @@ class radial(wx.Frame):
                     simulation = self.simulations[-sim_len_i]
                     sim = simulation.srdf/simulation.sdrdf**1.5
                     sim_norm = sim/float(max(sim))
-                    #print sim, max(sim[1:]), min(sim[1:]), sim_norm
+                    #print(sim, max(sim[1:]), min(sim[1:]), sim_norm)
                     #simulation.sdrdf, 0, sim_norm*simulation.sim_intens, color[col_index] ,linewidth = 2, zorder = 2)
                     sim = array([sim_norm*simulation.sim_intens, simulation.sdrdf])
                     outfile.write('# Pattern Simulation {0}\n'.format(sim.shape))
-                    print sim.shape, sim
+                    print(sim.shape, sim)
                     savetxt(outfile, rot90(sim ,k=3))
             # Open the file for write, write, close
 #            self.filename=dlg.GetFilename()
@@ -653,8 +662,8 @@ class radial(wx.Frame):
         
         axi2 = self.canvas.figure.axes[0]
                 
-        print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-            event.button, event.x, event.y, event.xdata, event.ydata)
+        print('button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
+            event.button, event.x, event.y, event.xdata, event.ydata))
         ax = event.xdata
         ay = event.ydata
         
@@ -671,7 +680,7 @@ class radial(wx.Frame):
             text_pos = self.peak_parab[peak_i]+text_offset
         
         dspace = 1/peak
-        print dspace
+        print(dspace)
         
         axi2.plot(peak, text_pos-text_offset, 'b+')
         
@@ -681,7 +690,7 @@ class radial(wx.Frame):
             bbox=bbox_props)
         axi2.figure.canvas.draw()
         #radframe.canvas.mpl_disconnect(eid)
-        #print "Press 'm' mark additional peaks."    
+        #print("Press 'm' mark additional peaks.")
     
     def peak_fit(self, ax, poly_degree = 4, fit_range = 2, num_inter = 40):
         
@@ -691,7 +700,7 @@ class radial(wx.Frame):
         if self.plot_polar:
             fit_range = 4
         
-        #print self.drdf, ax, self.drdf[i-fit_range:i+fit_range+1]
+        #print(self.drdf, ax, self.drdf[i-fit_range:i+fit_range+1])
         
         # form the Vandermonde matrix
         A = vander(self.drdf[i-fit_range:i+fit_range+1], poly_degree)
@@ -712,8 +721,8 @@ class radial(wx.Frame):
         
         axi2 = self.canvas.figure.axes[0]
         
-        print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-            event.button, event.x, event.y, event.xdata, event.ydata)
+        print('button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
+            event.button, event.x, event.y, event.xdata, event.ydata))
         ax = event.xdata
         
         points = abs(self.drdf - ax)
@@ -757,7 +766,7 @@ class radial(wx.Frame):
             if not self.bgfitp.size: self.bgfitp = array([ax,self.rdf[i]])
             else: self.bgfitp = vstack((self.bgfitp, array([ax,self.rdf[i]])))
     
-            print self.bgfitp, self.bgfitp.size
+            print(self.bgfitp, self.bgfitp.size)
     
             axi2.set_autoscale_on(False)
             point_mark = axi2.plot(ax, self.rdf[i], 'b+')
@@ -782,8 +791,8 @@ class radial(wx.Frame):
             
             bestparams = pbest[0]
             cov_x = pbest[1]
-            print 'best fit parameters ',bestparams
-            print cov_x
+            print('best fit parameters ',bestparams)
+            print(cov_x)
         
             self.background = func(self.drdf,bestparams)
             
@@ -804,7 +813,7 @@ class radial(wx.Frame):
             
             start = nonzero(self.rdf>0)[0][0]
             
-            print self.rdf[start:].min()
+            print(self.rdf[start:].min())
             
             self.rdf -= self.rdf[start:].min()
             
@@ -818,9 +827,9 @@ class radial(wx.Frame):
             axi2.figure.canvas.draw()
             
             self.bgfitp = array([])
-            print self.toolbar.fid
+            print(self.toolbar.fid)
             self.toolbar.fid = self.canvas.mpl_disconnect(self.toolbar.fid)
-            print self.toolbar.fid
+            print(self.toolbar.fid)
 
     def OnClearPro(self,e):
         self.axes.cla()
@@ -850,12 +859,12 @@ class radial(wx.Frame):
         axi2 = self.canvas.figure.axes[0]
         
         axi2.cla()
-        print len(self.rdfb), len(self.rdfb[-1]), len(self.drdfb[-1])
+        print(len(self.rdfb), len(self.rdfb[-1]), len(self.drdfb[-1]))
         if len(self.rdfb) > 1:
-            print self.rdfb[-1]
+            print(self.rdfb[-1])
             self.rdfb.pop(-1)
             self.drdfb.pop(-1)
-        print len(self.rdfb), len(self.rdfb[-1]), len(self.drdfb[-1]) , self.rdfb[-1]
+        print(len(self.rdfb), len(self.rdfb[-1]), len(self.drdfb[-1]) , self.rdfb[-1])
         self.rdf = self.rdfb[-1].copy()
         self.drdf = self.drdfb[-1].copy()
             
@@ -874,9 +883,9 @@ class radial(wx.Frame):
 
         rdf = array(self.rdf)
         drdf = array(self.drdf)
-        #print pmrdf.shape, psrdf.max()
+        #print(pmrdf.shape, psrdf.max())
         self.dpmrdf = arange(pmrdf.shape[0])*(self.pixel_size / 10**10)
-        #print dpmrdf.shape
+        #print(dpmrdf.shape)
     
         #rdf /= rdf.max()
         #pmrdf /= pmrdf.max()
@@ -947,7 +956,7 @@ class radial(wx.Frame):
         # your frame object and change it when it was called to reflect
         # current parameters / values
         dlg = wx.FileDialog(self, "Choose a Desktop Microscopist ring simulation screen shot(cropped tif) with camera length of 400cm & 200kV",
-            self.dirname, "", "TIF|*.tif;*.TIF|All Files|*.*", wx.OPEN)
+            self.dirname, "", "TIF|*.tif;*.TIF|All Files|*.*", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             
             img_con = 0.05
@@ -956,9 +965,9 @@ class radial(wx.Frame):
             filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
             
-            print self.dirname
+            print(self.dirname)
             
-            #print count, centers, circle
+            #print(count, centers, circle)
             
             im = Image.open(os.path.join(self.dirname, filename))
             
@@ -991,14 +1000,14 @@ class radial(wx.Frame):
                 except ValueError:
                     dlg.Destroy()
                     error_file = 'Image file must be grayscale.'
-                    print error_file
+                    print(error_file)
                     error_int_dlg = Error(self, -1, 'Error', error_file)
                     error_int_dlg.Show(True)
                     error_int_dlg.Centre()
                     return
             
             c_index = nonzero(sim_open==20)
-            print len(c_index[0])
+            print(len(c_index[0]))
             if len(c_index[0]) == 25:
                 self.simulations += [Simulation(sim_open, name)]
                 
@@ -1013,7 +1022,7 @@ class radial(wx.Frame):
             else:
                 dlg.Destroy()
                 error_file = 'Image must be a Desktop Microscopist screen shot.'
-                print error_file
+                print(error_file)
                 error_int_dlg = Error(self, -1, 'Error', error_file)
                 error_int_dlg.Show(True)
                 error_int_dlg.Centre()
@@ -1025,25 +1034,25 @@ class radial(wx.Frame):
         # your frame object and change it when it was called to reflect
         # current parameters / values
         dlg = wx.FileDialog(self, "Choose a GDIS electron powder plot with a wavelength of .5 and with U,V,W set to 0",
-            self.dirname, "", "txt|*.txt;*.TXT|All Files|*.*", wx.OPEN)
+            self.dirname, "", "txt|*.txt;*.TXT|All Files|*.*", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
                         
             filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
             name, ext = os.path.splitext(filename)
-            print self.dirname
+            print(self.dirname)
             
             try:
                 sim_open = loadtxt(os.path.join(self.dirname, filename),skiprows=0)
             except:
                 dlg.Destroy()
                 error_file = 'File must be an exported GDIS Graph.'
-                print error_file
+                print(error_file)
                 error_int_dlg = Error(self, -1, 'Error', error_file)
                 error_int_dlg.Show(True)
                 error_int_dlg.Centre()
             else:
-                print len(nonzero(sim_open[:,1])[0])
+                print(len(nonzero(sim_open[:,1])[0]))
                 if len(nonzero(sim_open[:,1])[0]) <= 200:
                     self.simulations += [Simulation(sim_open, name)]
                     
@@ -1058,7 +1067,7 @@ class radial(wx.Frame):
                 else:
                     dlg.Destroy()
                     error_file = 'File must have less than 200 peaks.'
-                    print error_file
+                    print(error_file)
                     error_int_dlg = Error(self, -1, 'Error', error_file)
                     error_int_dlg.Show(True)
                     error_int_dlg.Centre()
@@ -1070,20 +1079,20 @@ class radial(wx.Frame):
         # your frame object and change it when it was called to reflect
         # current parameters / values
         dlg = wx.FileDialog(self, "Choose a GDIS electron powder plot with a wavelength of .5, with Lorentzian, and with U,V,W set to 0.6",
-            self.dirname, "", "txt|*.txt;*.TXT|All Files|*.*", wx.OPEN)
+            self.dirname, "", "txt|*.txt;*.TXT|All Files|*.*", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
                         
             filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
             name, ext = os.path.splitext(filename)
-            print self.dirname
+            print(self.dirname)
             
             try:
                 sim_open = loadtxt(os.path.join(self.dirname, filename),skiprows=0)
             except:
                 dlg.Destroy()
                 error_file = 'File must be an exported GDIS Graph.'
-                print error_file
+                print(error_file)
                 error_int_dlg = Error(self, -1, 'Error', error_file)
                 error_int_dlg.Show(True)
                 error_int_dlg.Centre()
@@ -1095,7 +1104,7 @@ class radial(wx.Frame):
                 intensity = sim_open[:,1]
                 intensity /= intensity.max()
 
-                print sim_open.shape, len(theta_2), len(intensity)
+                print(sim_open.shape, len(theta_2), len(intensity))
 
                 #self.axes.plot(inv_d,intensity)
                 #self.axes.figure.canvas.draw()
@@ -1172,7 +1181,7 @@ class Pro_Pref(wx.Dialog):
         self.parent.polar_neg = self.polar_neg_cb.GetValue()
         self.parent.gamma = float(self.gamma_tc.GetValue())
         
-        #print self.parent.polar_neg
+        #print(self.parent.polar_neg)
         
         self.parent.axes.cla()
         self.parent.plot(2)            
