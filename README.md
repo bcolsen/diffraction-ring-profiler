@@ -15,5 +15,4 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
 
 **(Fixed in version 1.7)** -**Bug**-: If the program launches with an error after you upgrade to the latest version (usually seen on Windows 7), you must clear the matplotlib cache by deleting the ".matplotlib" directory in your home directory.
 
-[[https://github.com/bcolsen/diffraction-ring-profiler/wiki/images/screen16.png]]
-
+![Screen Shot](https://raw.githubusercontent.com/wiki/bcolsen/diffraction-ring-profiler/images/screen16.png)
