@@ -1,6 +1,6 @@
 **A program for extracting electron diffraction ring pattern profiles, comparing simulation and making figures.**
 
-Produced by [Dr. David Mitlin's Research Group](http://www.ualberta.ca/CMENG/Mitlin-Group/) from the Department of Chemical and Materials Engineering at the Univerity of Alberta
+Produced by [Dr. David Mitlin's Research Group](http://www.mitlingroup.com/) from the Department of Chemical and Materials Engineering at the Univerity of Alberta
 
 If you found this program helpful in your research, please cite it by using a line similar to:
 
