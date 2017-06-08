@@ -1,6 +1,6 @@
 Diffraction Ring Profiler
 
-Copyright: Brian Olsen 2011
+Copyright: Brian Olsen 2017
 
 Licence: GNU GPL 3.0
 
@@ -12,34 +12,15 @@ Tutorial: http://code.google.com/p/diffraction-ring-profiler/wiki/howtoscreensho
 
 Requires:
 
-    Python 2.6
-    Matplotlib 0.9 or higher
+    Python 3.5+
+    Matplotlib 2.0+ or higher
     Scipy
     Numpy
     PIL (Imaging)
-    WxPython
+    WxPython 4.0+
 
-
-On Ubuntu 10.10+:
-
-    $ sudo apt-get install python python-matplotlib python-scipy python-numpy python-imaging python-wxgtk2.8
-
-On Ubuntu 10.04(32 or 64):
-
-    $ sudo apt-get install python python-matplotlib python-scipy python-numpy python-imaging python-wxgtk2.8
-
-    As well as install these two packages:
-
-    if 32 bit:
-    
-        https://launchpad.net/~tukss/+archive/ppa/+files/python-matplotlib-data_1.0.1-1%7Etux1%7Etux1lucid1_all.deb
-        https://launchpad.net/~tukss/+archive/ppa/+files/python-matplotlib_1.0.1-1%7Etux1%7Etux1lucid1_i386.deb
-
-    if 64 bit:
-    
-        https://launchpad.net/~tukss/+archive/ppa/+files/python-matplotlib-data_1.0.1-1%7Etux1%7Etux1lucid1_all.deb
-        https://launchpad.net/~tukss/+archive/ppa/+files/python-matplotlib_1.0.1-1%7Etux1%7Etux1lucid1_amd64.deb
-
+All these come with Anaconda Python 3.6 Distribution: https://www.continuum.io/downloads
+conda install -c newville wxpython-phoenix
 
 To Run:
 
