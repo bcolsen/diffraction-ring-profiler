@@ -235,7 +235,7 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     bands = []
     band = array([pro_intens_l,ones(len(pro_intens_l))]).T
     zi = sp.ndimage.map_coordinates(band, coords, order=2)
-    bands = (zi.reshape((img_size, img_size)))
+    bands = (zi.reshape((int(img_size), int(img_size))))
     output = bands
     #pmrdf, psrdf, prrdf= polar_mean(output)
     

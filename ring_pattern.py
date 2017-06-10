@@ -323,7 +323,7 @@ class ring_pattern(wx.Frame):
     def do_prosim(self):
         if self.ring_patt == []:
             self.ring_patt = make_profile_rings(self.parent.prosim_int, self.parent.prosim_theta_2, self.origin, self.parent.boxs)
-        self.axes.imshow(self.ring_patt[:,:self.ring_patt.shape[1]/2], cmap='gray', origin='lower',
+        self.axes.imshow(self.ring_patt[:,:self.ring_patt.shape[1]//2], cmap='gray', origin='lower',
             extent=(-self.parent.prosim_inv_d.max(), 0, -self.parent.prosim_inv_d.max(), self.parent.prosim_inv_d.max()))
         print(self.parent.prosim_inv_d.max())
 
