@@ -666,7 +666,7 @@ class diffaction_int(wx.Frame):
         
         #log_pattern = log(1+a*self.pattern)#/log(1+a*self.pattern).max()*255
         
-        self.img = self.axes.imshow(self.pattern, cmap='gray', aspect='equal')
+        self.img = self.axes.imshow(self.pattern, cmap='gray', aspect='equal', interpolation='bicubic')
         #axi.set_xlim(0, size[1])
         #axi.set_ylim(0, size[0])
         #canvas = axi.figure.canvas
@@ -977,36 +977,58 @@ class Pref(wx.Dialog):
     
         self.parent = parent
         
-        wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, 350))
+        wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, 450))
         
         wx.StaticText(self, -1, 'Pattern Properties', (20,20))
         wx.StaticText(self, -1, 'Accelerating Voltage (kV): ', (20, 80))
         #wx.StaticText(self, -1, 'Wavelength (m): ', (20, 130))
         wx.StaticText(self, -1, 'Camera Length (cm): ', (20, 180))
         wx.StaticText(self, -1, 'Resolution (PPI): ', (20, 230))    
+        wx.StaticText(self, -1, 'Pixel Size (1/Å): ', (20, 325))
         
         wavelen_btn = wx.Button(self, 3, 'Wavelength (m):', (20, 125))
-        self.wavelen_text = wx.StaticText(self, -1, '', (200, 130))
-        self.accv_sc = wx.SpinCtrl(self, -1, '',  (200, 75), (60, -1))
+        self.wavelen_text = wx.StaticText(self, -1, '', (230, 130))
+        
+        self.accv_sc = wx.SpinCtrl(self, -1, '',  (230, 75), (80, -1))
         self.accv_sc.SetRange(1, 500)
         self.accv_sc.SetValue(self.parent.accv)        
 
-        self.camlen_sc = wx.SpinCtrl(self, -1, '',  (200, 175), (60, -1))
+        self.camlen_sc = wx.SpinCtrl(self, -1, '',  (230, 175), (80, -1))
         self.camlen_sc.SetRange(1, 5000)
         self.camlen_sc.SetValue(self.parent.camlen)
 
-        self.imgcal_tc = wx.TextCtrl(self, -1, '',  (200, 225), (60, -1))
+        self.imgcal_tc = wx.TextCtrl(self, -1, '',  (230, 225), (80, -1))
         imagecal_text = '%.2f' % (self.parent.imgcal)
         self.imgcal_tc.SetValue(imagecal_text)
+        
+        self.pixel_size_tc = wx.TextCtrl(self, -1, '',  (230, 325), (80, -1))
+        print(self.parent.pixel_size)
+        pixel_size_text = '%.3g' % (self.parent.pixel_size*10**-10)
+        self.pixel_size_tc.SetValue(pixel_size_text)
+        
+        cal_btn = wx.Button(self, 4, 'Calculate Pixel Size', (100, 275))
     
-        set_btn = wx.Button(self, 1, 'Set', (70, 275))
+        set_btn = wx.Button(self, 1, 'Set Pixel Size', (70, 390))
         set_btn.SetFocus()
-        clear_btn = wx.Button(self, 2, 'Close', (185, 275))
+        clear_btn = wx.Button(self, 2, 'Close', (185, 390))
 
         self.Bind(wx.EVT_BUTTON, self.OnSet, id=1)
         self.Bind(wx.EVT_BUTTON, self.OnClose, id=2)
         self.Bind(wx.EVT_BUTTON, self.OnWavelen, id=3)
+        self.Bind(wx.EVT_BUTTON, self.OnCalPxSize, id=4)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+        
+    def OnCalPxSize(self, event):
+        self.parent.camlen = self.camlen_sc.GetValue()
+        self.parent.accv = self.accv_sc.GetValue()
+        accvm = self.parent.accv * 1000
+        self.parent.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2)))
+        self.parent.imgcal = float(self.imgcal_tc.GetValue())
+        
+        self.parent.PixelSize()
+        print(self.parent.pixel_size)
+        pixel_size_text = '%.3g' % (self.parent.pixel_size*10**-10)
+        self.pixel_size_tc.SetValue(pixel_size_text)
 
     def OnWavelen(self, event):
         self.parent.accv = self.accv_sc.GetValue() * 1000
@@ -1016,17 +1038,12 @@ class Pref(wx.Dialog):
         self.wavelen_text.SetLabel(wavelen_label)
         
     def OnSet(self, event):
-        
+        pixel_size = float(self.pixel_size_tc.GetValue())
+        pixel_size *= 10**10
+        self.parent.pixel_size = pixel_size
+        print(self.parent.pixel_size)
         circles = self.parent.toolbar.circles
         lines = self.parent.toolbar.lines
-        
-        self.parent.camlen = self.camlen_sc.GetValue()
-        self.parent.accv = self.accv_sc.GetValue()
-        accvm = self.parent.accv * 1000
-        self.parent.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2)))
-        self.parent.imgcal = float(self.imgcal_tc.GetValue())
-        
-        self.parent.PixelSize()
         
         del self.parent.axes.texts[-len(circles)-len(lines):]
         

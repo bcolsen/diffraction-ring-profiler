@@ -69,7 +69,7 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
 class ring_pattern(wx.Frame):
 
     def __init__(self, parent):
-        wx.Frame.__init__(self,parent,-1,"Ring Figure - "+parent.filename ,size=(550,350))
+        wx.Frame.__init__(self,parent,-1,"Ring Figure - "+parent.filename ,size=(550,400))
                 
         self.parent = parent
         
@@ -210,7 +210,7 @@ class ring_pattern(wx.Frame):
         if self.background_sub == 1: 
             self.do_background_sub()
 
-        self.axes.imshow(self.pattern_open_crop, cmap = 'gray',
+        self.axes.imshow(self.pattern_open_crop, cmap = 'gray', interpolation='bicubic',
                 extent=(-self.parent.drdf.max(), self.parent.drdf.max(), -self.parent.drdf.max(), self.parent.drdf.max()))
         
         if self.prosim == 1:
@@ -323,7 +323,7 @@ class ring_pattern(wx.Frame):
     def do_prosim(self):
         if self.ring_patt == []:
             self.ring_patt = make_profile_rings(self.parent.prosim_int, self.parent.prosim_inv_d, self.origin, self.parent.boxs)
-        self.axes.imshow(self.ring_patt[:,:self.ring_patt.shape[1]//2], cmap='gray', origin='lower',
+        self.axes.imshow(self.ring_patt[:,:self.ring_patt.shape[1]//2], cmap='gray', origin='lower', interpolation='bicubic',
             extent=(-self.parent.prosim_inv_d.max(), 0, -self.parent.prosim_inv_d.max(), self.parent.prosim_inv_d.max()))
         print(self.parent.prosim_inv_d.max())
 

@@ -265,7 +265,7 @@ class radial(wx.Frame):
 
     def __init__(self, parent, pattern_open, circles, pixel_size, size):
         wx.Frame.__init__(self,parent,-1,
-            "Intensity Profile - "+parent.filename ,size=(550,350))
+            "Intensity Profile - "+parent.filename ,size=(700,500))
                 
         iconFile = os.path.join(parent.iconspath, "diff_profiler_ico.ico")
         icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
@@ -561,7 +561,7 @@ class radial(wx.Frame):
             else: cmap='gray'
             #print(cmap, self.polar_neg)
             log_polar = rot90(log(1+self.gamma*self.polar_grid))
-            self.axes.imshow(log_polar, cmap=cmap, origin='lower',
+            self.axes.imshow(log_polar, cmap=cmap, origin='lower', interpolation='bicubic',
                 extent=(0, self.drdf.max(), 0, self.rdf.max()+self.rdf.max()*.2))
         if self.prosim:
             self.axes.plot(self.prosim_inv_d,self.prosim_int, linewidth=1, c='r', zorder = 40)
