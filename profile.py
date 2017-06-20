@@ -18,6 +18,7 @@ import wx
 import os
 
 from numpy import *
+import numpy as np
 import scipy.constants as con
 from scipy.optimize import leastsq
 import scipy.special
@@ -31,6 +32,11 @@ from sim_index import *
 import ring_pattern
 
 import time
+
+import subprocess
+
+from io import BytesIO
+from scipy import special
 
 class Timer():
    def __enter__(self): self.start = time.time()
@@ -301,9 +307,10 @@ class radial(wx.Frame):
         intmenu= wx.Menu()
         # use ID_ for future easy reference - much better than "48", "404" etc
         # The & character indicates the short cut key
-        intmenu.Append(ID_SIM2, "&Import GDIS Simulation"," Open a peak simulation from GDIS")
-        intmenu.Append(ID_PROSIM, "&Import GDIS Profile Sim"," Open a profile simulation from GDIS")
-        intmenu.Append(ID_SIM, "&Import DM Simulation"," Open a Desktop Microscopist simulation")
+        intmenu.Append(ID_SIM, "Import &Crystal File(CIF)"," Simulate Peaks and Profile from a CIF file")
+        intmenu.Append(ID_SIM2, "Import &GDIS Simulation"," Open a peak simulation from GDIS")
+        intmenu.Append(ID_PROSIM, "Import GDIS &Profile Sim"," Open a profile simulation from GDIS")
+        
         intmenu.Append(ID_SAVE, "&Export Data"," Export Profile Data to a text file")
         
         # Setting up the menu. filemenu is a local variable at this stage.
@@ -327,7 +334,7 @@ class radial(wx.Frame):
         toolsmenu.Append(ID_POL, "&Polar Pattern"," Display polar pattern to compare with the profile")        
         toolsmenu.Append(ID_BSC, "Beam Stop &Correction"," Use the polar pattern to correct for a beam stopper")
         toolsmenu.Append(ID_RSP, "Remove &Spots","Removes a spot pattern from the profile")
-        toolsmenu.Append(ID_RING, "Make a Ring Figure","Uses the pattern and the fitted simulations to make a ring figure")
+        toolsmenu.Append(ID_RING, "Make a Ring &Figure","Uses the pattern and the fitted simulations to make a ring figure")
         # Creating the menubar.
         menuBar = wx.MenuBar()
         menuBar.Append(intmenu,"&Profile") # Adding the "patternmenu" to the MenuBar
@@ -955,12 +962,9 @@ class radial(wx.Frame):
         # application. In theory, you could create one earlier, store it in
         # your frame object and change it when it was called to reflect
         # current parameters / values
-        dlg = wx.FileDialog(self, "Choose a Desktop Microscopist ring simulation screen shot(cropped tif) with camera length of 400cm & 200kV",
-            self.dirname, "", "TIF|*.tif;*.TIF|All Files|*.*", wx.FD_OPEN)
+        dlg = wx.FileDialog(self, "Choose a CIF crystal file",
+            self.dirname, "", "CIF|*.cif;*.CIF|All Files|*.*", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
-            
-            img_con = 0.05
-            img_con16 = 0.0001
                         
             filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
@@ -969,63 +973,107 @@ class radial(wx.Frame):
             
             #print(count, centers, circle)
             
-            im = Image.open(os.path.join(self.dirname, filename))
-            
             name, ext = os.path.splitext(filename)
             
-            #self.sim_nameb += [name]
-            
-            Image._initialized=2
+            di_max = 1.4
+            d_min = str(1/1.4)
 
-            if im.mode=='L':
-                # return MxN luminance array
-                x_str = im.tostring('raw',im.mode,0,-1)
-                sim_open = fromstring(x_str,uint8)
-                sim_open.shape = im.size[1], im.size[0]
-                a = img_con
-            elif im.mode=='I;16':
-                # return MxN luminance array
-                x_str = im.tostring('raw',im.mode,0,-1)
-                sim_open = fromstring(x_str,uint16)
-                sim_open.shape = im.size[1], im.size[0]
-                a = img_con16
-            else:
-                # return MxN luminance array
-                try:
-                    im = im.convert('L')
-                    x_str = im.tostring('raw',im.mode,0,-1)
-                    sim_open = fromstring(x_str,uint8)
-                    sim_open.shape = im.size[1], im.size[0]
-                    a = img_con
-                except ValueError:
-                    dlg.Destroy()
-                    error_file = 'Image file must be grayscale.'
-                    print(error_file)
-                    error_int_dlg = Error(self, -1, 'Error', error_file)
-                    error_int_dlg.Show(True)
-                    error_int_dlg.Centre()
-                    return
+            cif_name = os.path.join(self.dirname, filename)
+
+            cctbx_python_path = '/usr/local/cctbx-dev-1065/build/bin/cctbx.python'
+
+            def voigt(x,amp,pos,fwhm,shape):
+                 """\
+                voigt profile
+
+                V(x,sig,gam) = Re(w(z))/(sig*sqrt(2*pi))
+                z = (x+i*gam)/(sig*sqrt(2))
+                 """
+
+                 tmp = 1/special.wofz(np.zeros((len(x))) \
+                       +1j*np.sqrt(np.log(2.0))*shape).real
+                 tmp = tmp*amp* \
+                       special.wofz(2*np.sqrt(np.log(2.0))*(x-pos)/fwhm+1j* \
+                       np.sqrt(np.log(2.0))*shape).real
+                 return tmp
+
+            cctbx_script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'iotbx_cif.py'))
+
+            print(cctbx_python_path, cctbx_script_path)
+
+            sf_output, sf_error = subprocess.Popen([cctbx_python_path, cctbx_script_path, cif_name, d_min, 'sf'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            print(sf_output)
+
+            ds_output, sf_error = subprocess.Popen([cctbx_python_path, cctbx_script_path, cif_name, d_min, 'ds'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            print(ds_output)
+
+            mt_output, sf_error = subprocess.Popen([cctbx_python_path, cctbx_script_path, cif_name, d_min, 'mt'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            print(mt_output)
+
+            sf_data = genfromtxt(BytesIO(sf_output), dtype=None, names=('h','k','l','sf'))
+
+            #print sf_data.shape
+            sf= sf_data['sf']
+            print(sf)
+
+            ds_data = genfromtxt(BytesIO(ds_output), dtype=None, names=('h','k','l','ds'))
+
+            #print ds_data.shape
+            ds= ds_data['ds']
+            print(ds)
+
+            mt_data = genfromtxt(BytesIO(mt_output), dtype=None, names=('h','k','l','mt'))
+
+            #print ds_data.shape
+            mt= mt_data['mt']
+            print(mt)
+
+
+            hkl_list = []
+            for h,k,l in zip(ds_data['h'],ds_data['k'],ds_data['l']):
+                hkl_list += [''.join([str(h.translate(None,b' (),'),"utf-8"), str(k.translate(None,b' (),'),"utf-8"), str(l.translate(None,b' (),'),"utf-8")])]
+                
+            print(hkl_list)
+
+            sol2 = (0.5/ds)**2
+
+            sfc = (sf)/sol2
+
+            sfc2 = (sf)/((1/ds)**(2+.5))
+
+
+            int1 = sfc*mt
+            int2 = sfc2*mt
+
+            int2n = int2/int2.max()
+            int1n = int1/int1.max()
+
+            ## Broden
+            x = np.linspace(0,di_max,1000)
+            di =1/ds
+            vois =[]
+            for i,d in zip(int2n,di):
+                vois += [voigt(x,i,d,0.025,1)]
+
+            brd = np.array(vois).sum(axis=0)
+
+            dtypes = [('inv_d',float),('intensity',float),('index','<U4')]
+            sim_open = np.array(list(zip(di,int2n,hkl_list)), dtypes)
+            sim_open.sort(order='inv_d')
+            print(sim_open,sim_open.shape,len(sim_open.shape))
+            self.simulations += [Simulation(name, sim_open[['inv_d','intensity']], sim_open['index'])]
             
-            c_index = nonzero(sim_open==20)
-            print(len(c_index[0]))
-            if len(c_index[0]) == 25:
-                self.simulations += [Simulation(sim_open, name)]
-                
-                self.plot_sim = 1
-                
-                self.axes.cla()
-                self.plot(2,'b')        
-                
-                self.axes.figure.canvas.draw()
-                
-                dlg.Destroy()
-            else:
-                dlg.Destroy()
-                error_file = 'Image must be a Desktop Microscopist screen shot.'
-                print(error_file)
-                error_int_dlg = Error(self, -1, 'Error', error_file)
-                error_int_dlg.Show(True)
-                error_int_dlg.Centre()
+            self.plot_sim = 1
+            self.prosim = 1
+            self.prosim_int = brd
+            self.prosim_inv_d = x
+            
+            self.axes.cla()
+            self.plot(2,'b')        
+            
+            self.axes.figure.canvas.draw()
+            
+            dlg.Destroy()
     
     def OnSim2Open(self,e):
         # In this case, the dialog is created within the method because
@@ -1054,7 +1102,7 @@ class radial(wx.Frame):
             else:
                 print(len(nonzero(sim_open[:,1])[0]))
                 if len(nonzero(sim_open[:,1])[0]) <= 200:
-                    self.simulations += [Simulation(sim_open, name)]
+                    self.simulations += [Simulation(name, sim_open)]
                     
                     self.plot_sim = 1
                     

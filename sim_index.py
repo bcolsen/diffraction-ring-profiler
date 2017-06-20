@@ -156,51 +156,11 @@ class Simulation:
     """
     Simulation label and index
     """
-    def __init__(self, sim_open, sim_name):
-        c_index = nonzero(sim_open==20)
-        if len(c_index[0]) == 25:
-            sim_open[nonzero(sim_open==20)] = 0
-            print(c_index, c_index[0][12], c_index[1][2])
-            Cs = [c_index[1][2],c_index[0][12]]
-
-            Nx = sim_open.shape[1]
-            Ny = sim_open.shape[0]
-            print(Cs, Cs[0], Cs[1])		
-            boxx = (Nx - Cs[0])-2
-    #		boxy = Ny/2. - abs(Ny/2. - Cs[1])-2
-    #		if boxx <= boxy:
-    #			boxs = floor(boxx)
-    #		else:
-    #			boxs = floor(boxy)
-
-            boxs = int(boxx)
-            #print(boxs)
-
-            Cr = copy(Cs)
-
-            #print(Cr[1],Cr[1]+boxs,Cr[0])
-            sim_open -= 40
-            sim_open[nonzero(sim_open>=195)] = 0
-            #print(sim_open)
-            srdf = sim_open[Cr[1],Cr[0]:Cr[0]+boxs]
-            #self.srdfb += [self.srdf.copy()]
-            #cens_pattern[:4]=0
-            #print(self.srdf.shape, self.srdf, sim_open.shape)
-            wavelen = 2.50793394487e-12
-            camlen = 400
-            imgcal = 72 #(radii[0] * radius_angs * 10**-10 * 2.54)/((float(camlen)/100.) * self.wavelen * 100.)
-            sdrdf = (arange(boxs))/(((imgcal / 2.54) * 100) * wavelen * (float(camlen) / 100) * 10**10)
-            #self.sdrdfb += [self.sdrdf.copy()]
-            self.sim_intens = 0.7
-            print(srdf, srdf.max())
-            srdf = srdf/float(srdf.max())
-            sim_index = nonzero(srdf!=0)
-            
-            sdrdf = sdrdf[sim_index]
-            srdf = srdf[sim_index]
-            
-            srdf = srdf/sdrdf**1.5
-            
+    def __init__(self, sim_name, sim_open, peak_index_labels=[]):
+        if len(sim_open.shape) == 1: # it's a records array
+            sdrdf = sim_open['inv_d']
+            srdf = sim_open['intensity']
+            self.sim_intens = 1
         else:
             theta_2 = sim_open[:,0]
             inv_d = (2*sin(((theta_2/180)*pi)/2.))/.5
@@ -225,7 +185,7 @@ class Simulation:
         self.sim_name = sim_name
         self.sim_label = sim_name
         
-        self.peak_index_labels = []
+        self.peak_index_labels = list(peak_index_labels)
         self.sim_tcs = []
         self.sim_color = 0
 
