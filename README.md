@@ -18,7 +18,15 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
 
 ## Installation
 
-Install the Anconda Python 3.6 Distribution:(It's big(450mb) but it's full of great science tools) 
+### Windows
+
+There are zipped executables available in the release section at:
+
+[https://github.com/bcolsen/diffraction-ring-profiler/releases](https://github.com/bcolsen/diffraction-ring-profiler/releases)
+
+### All Systems
+
+Install the Anconda Python 3.5(or greater) Distribution:(It's big(450mb) but it's full of great science tools) 
 
 [Download Anaconda](https://www.continuum.io/downloads)
 
@@ -30,7 +38,14 @@ To Run:
 
 `python diffraction_ring_profiler.py`
 
+## Cctbx Cif Crystal File Profile Simulations
 
-**(Fixed in version 1.7)** -**Bug**-: If the program launches with an error after you upgrade to the latest version (usually seen on Windows 7), you must clear the matplotlib cache by deleting the ".matplotlib" directory in your home directory.
+You can now use cctbx to simulate diffraction profiles from .cif crystal files.
+
+Download the latest cctbx binaries from here:
+
+[Download CCTBX](http://cci.lbl.gov/cctbx_build/)
+
+Then extract the folder to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/) 
 
 ![Screen Shot](https://raw.githubusercontent.com/wiki/bcolsen/diffraction-ring-profiler/images/screen16.png)
