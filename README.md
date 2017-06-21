@@ -48,6 +48,12 @@ Download the latest cctbx binaries from here:
 
 Then extract the folder to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/) 
 
+## Documentation
+
+The are instuctions on the Wiki with screenshots:
+
+[How-to](https://github.com/bcolsen/diffraction-ring-profiler/wiki/How-to-&-Screenshots)
+
 ## Screen Shots
 
 ![Screen Shot](https://raw.githubusercontent.com/wiki/bcolsen/diffraction-ring-profiler/images/screen16.png)
