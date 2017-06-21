@@ -962,118 +962,141 @@ class radial(wx.Frame):
         # application. In theory, you could create one earlier, store it in
         # your frame object and change it when it was called to reflect
         # current parameters / values
-        dlg = wx.FileDialog(self, "Choose a CIF crystal file",
-            self.dirname, "", "CIF|*.cif;*.CIF|All Files|*.*", wx.FD_OPEN)
-        if dlg.ShowModal() == wx.ID_OK:
-                        
-            filename=dlg.GetFilename()
-            self.dirname=dlg.GetDirectory()
+        
+        cctbx_python_path = None
             
-            print(self.dirname)
-            
-            #print(count, centers, circle)
-            
-            name, ext = os.path.splitext(filename)
-            
-            di_max = 1.4
-            d_min = str(1/1.4)
-
-            cif_name = os.path.join(self.dirname, filename)
-
-            cctbx_python_path = '/usr/local/cctbx-dev-1065/build/bin/cctbx.python'
-
-            def voigt(x,amp,pos,fwhm,shape):
-                 """\
-                voigt profile
-
-                V(x,sig,gam) = Re(w(z))/(sig*sqrt(2*pi))
-                z = (x+i*gam)/(sig*sqrt(2))
-                 """
-
-                 tmp = 1/special.wofz(np.zeros((len(x))) \
-                       +1j*np.sqrt(np.log(2.0))*shape).real
-                 tmp = tmp*amp* \
-                       special.wofz(2*np.sqrt(np.log(2.0))*(x-pos)/fwhm+1j* \
-                       np.sqrt(np.log(2.0))*shape).real
-                 return tmp
-
-            cctbx_script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'iotbx_cif.py'))
-
-            print(cctbx_python_path, cctbx_script_path)
-
-            sf_output, sf_error = subprocess.Popen([cctbx_python_path, cctbx_script_path, cif_name, d_min, 'sf'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-            print(sf_output)
-
-            ds_output, sf_error = subprocess.Popen([cctbx_python_path, cctbx_script_path, cif_name, d_min, 'ds'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-            print(ds_output)
-
-            mt_output, sf_error = subprocess.Popen([cctbx_python_path, cctbx_script_path, cif_name, d_min, 'mt'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-            print(mt_output)
-
-            sf_data = genfromtxt(BytesIO(sf_output), dtype=None, names=('h','k','l','sf'))
-
-            #print sf_data.shape
-            sf= sf_data['sf']
-            print(sf)
-
-            ds_data = genfromtxt(BytesIO(ds_output), dtype=None, names=('h','k','l','ds'))
-
-            #print ds_data.shape
-            ds= ds_data['ds']
-            print(ds)
-
-            mt_data = genfromtxt(BytesIO(mt_output), dtype=None, names=('h','k','l','mt'))
-
-            #print ds_data.shape
-            mt= mt_data['mt']
-            print(mt)
-
-
-            hkl_list = []
-            for h,k,l in zip(ds_data['h'],ds_data['k'],ds_data['l']):
-                hkl_list += [''.join([str(h.translate(None,b' (),'),"utf-8"), str(k.translate(None,b' (),'),"utf-8"), str(l.translate(None,b' (),'),"utf-8")])]
+        # Look for cctbx.python
+        home = os.path.expanduser('~')
+        #print(os.listdir(home))
+        for f_name in os.listdir(home):
+            if f_name.startswith('cctbx'):
+                cctbx_python_path = os.path.join(home,f_name,'build','bin','cctbx.python')
+        
+        if cctbx_python_path == None:
+            error_cctbx = 'Could not find cctbx.\nPlease download cctbx: http://cci.lbl.gov/cctbx_build/ \nand extract it to: ' + str(home)
+            print(error_cctbx)
+            error_int_dlg = Error(self, -1, 'Error', error_cctbx)
+            error_int_dlg.Show(True)
+            error_int_dlg.Centre()
+        else:
+            dlg = wx.FileDialog(self, "Choose a CIF crystal file",
+                self.dirname, "", "CIF|*.cif;*.CIF|All Files|*.*", wx.FD_OPEN)
+            if dlg.ShowModal() == wx.ID_OK:
+                            
+                filename=dlg.GetFilename()
+                self.dirname=dlg.GetDirectory()
                 
-            print(hkl_list)
+                print(self.dirname)
+                
+                #print(count, centers, circle)
+                
+                name, ext = os.path.splitext(filename)
+                
+                di_max = 1.4
+                d_min = str(1/1.4)
 
-            sol2 = (0.5/ds)**2
+                cif_name = os.path.join(self.dirname, filename)
+                
+                def voigt(x,amp,pos,fwhm,shape):
+                     """\
+                    voigt profile
 
-            sfc = (sf)/sol2
+                    V(x,sig,gam) = Re(w(z))/(sig*sqrt(2*pi))
+                    z = (x+i*gam)/(sig*sqrt(2))
+                     """
 
-            sfc2 = (sf)/((1/ds)**(2+.5))
+                     tmp = 1/special.wofz(np.zeros((len(x))) \
+                           +1j*np.sqrt(np.log(2.0))*shape).real
+                     tmp = tmp*amp* \
+                           special.wofz(2*np.sqrt(np.log(2.0))*(x-pos)/fwhm+1j* \
+                           np.sqrt(np.log(2.0))*shape).real
+                     return tmp
+
+                cctbx_script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'iotbx_cif.py'))
+
+                print(cctbx_python_path, cctbx_script_path)
+                
+                shell_args = [cctbx_python_path, cctbx_script_path, cif_name, d_min, 'sf']
+                pro_args = dict(args = shell_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if os.name == 'nt':
+                    pro_args['shell'] = True
+                    
+                shell_args[-1] = 'sf'
+                sf_output, sf_error = subprocess.Popen(**pro_args).communicate()
+                print(sf_output)
+                
+                shell_args[-1] = 'ds'
+                ds_output, sf_error = subprocess.Popen(**pro_args).communicate()
+                print(ds_output)
+                
+                shell_args[-1] = 'mt'
+                mt_output, sf_error = subprocess.Popen(**pro_args).communicate()
+                print(mt_output)
+
+                sf_data = genfromtxt(BytesIO(sf_output), dtype=None, names=('h','k','l','sf'))
+
+                #print sf_data.shape
+                sf= sf_data['sf']
+                print(sf)
+
+                ds_data = genfromtxt(BytesIO(ds_output), dtype=None, names=('h','k','l','ds'))
+
+                #print ds_data.shape
+                ds= ds_data['ds']
+                print(ds)
+
+                mt_data = genfromtxt(BytesIO(mt_output), dtype=None, names=('h','k','l','mt'))
+
+                #print ds_data.shape
+                mt= mt_data['mt']
+                print(mt)
 
 
-            int1 = sfc*mt
-            int2 = sfc2*mt
+                hkl_list = []
+                for h,k,l in zip(ds_data['h'],ds_data['k'],ds_data['l']):
+                    hkl_list += [''.join([str(h.translate(None,b' (),'),"utf-8"), str(k.translate(None,b' (),'),"utf-8"), str(l.translate(None,b' (),'),"utf-8")])]
+                    
+                print(hkl_list)
 
-            int2n = int2/int2.max()
-            int1n = int1/int1.max()
+                sol2 = (0.5/ds)**2
 
-            ## Broden
-            x = np.linspace(0,di_max,1000)
-            di =1/ds
-            vois =[]
-            for i,d in zip(int2n,di):
-                vois += [voigt(x,i,d,0.025,1)]
+                sfc = (sf)/sol2
 
-            brd = np.array(vois).sum(axis=0)
+                sfc2 = (sf)/((1/ds)**(2+.5))
 
-            dtypes = [('inv_d',float),('intensity',float),('index','<U4')]
-            sim_open = np.array(list(zip(di,int2n,hkl_list)), dtypes)
-            sim_open.sort(order='inv_d')
-            print(sim_open,sim_open.shape,len(sim_open.shape))
-            self.simulations += [Simulation(name, sim_open[['inv_d','intensity']], sim_open['index'])]
-            
-            self.plot_sim = 1
-            self.prosim = 1
-            self.prosim_int = brd
-            self.prosim_inv_d = x
-            
-            self.axes.cla()
-            self.plot(2,'b')        
-            
-            self.axes.figure.canvas.draw()
-            
-            dlg.Destroy()
+
+                int1 = sfc*mt
+                int2 = sfc2*mt
+
+                int2n = int2/int2.max()
+                int1n = int1/int1.max()
+
+                ## Broden
+                x = np.linspace(0,di_max,1000)
+                di =1/ds
+                vois =[]
+                for i,d in zip(int2n,di):
+                    vois += [voigt(x,i,d,0.025,1)]
+
+                brd = np.array(vois).sum(axis=0)
+
+                dtypes = [('inv_d',float),('intensity',float),('index','<U4')]
+                sim_open = np.array(list(zip(di,int2n,hkl_list)), dtypes)
+                sim_open.sort(order='inv_d')
+                print(sim_open,sim_open.shape,len(sim_open.shape))
+                self.simulations += [Simulation(name, sim_open[['inv_d','intensity']], sim_open['index'])]
+                
+                self.plot_sim = 1
+                self.prosim = 1
+                self.prosim_int = brd
+                self.prosim_inv_d = x
+                
+                self.axes.cla()
+                self.plot(2,'b')        
+                
+                self.axes.figure.canvas.draw()
+                
+                dlg.Destroy()
     
     def OnSim2Open(self,e):
         # In this case, the dialog is created within the method because
