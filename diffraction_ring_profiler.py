@@ -91,11 +91,15 @@ print(args, fullpath)
 #    outfile.write(str(args))
     
 
-
+rc('svg', fonttype='none')
+font = {'family' : 'sans-serif',
+        'sans-serif':'Arial',
+        'size'   : 14}
+rc('font', **font)
 rc('savefig', dpi=600)
-rc("xtick", direction="out")
-rc("ytick", direction="out")
-rc("lines", markeredgewidth=1)
+#rc("xtick", direction="out")
+#rc("ytick", direction="out")
+#rc("lines", markeredgewidth=1)
 
 print("""Welcome to Diffraction Ring Profiler. This program will 
         measure electron diffraction rings
@@ -661,8 +665,10 @@ class diffaction_int(wx.Frame):
         self.SetBackgroundColour(wx.Colour("WHITE"))
 
         self.figure = Figure(figsize=(8,8), dpi=76)
+        self.figure.patch.set_facecolor('#F2F1F0')
         self.axes = self.figure.add_subplot(111)
         self.axes.set_aspect(1)
+        self.figure.tight_layout()
         
         #log_pattern = log(1+a*self.pattern)#/log(1+a*self.pattern).max()*255
         
@@ -671,8 +677,6 @@ class diffaction_int(wx.Frame):
         #axi.set_ylim(0, size[0])
         #canvas = axi.figure.canvas
         self.axes.set_autoscale_on(False)
-        self.axes.xaxis.set_ticks_position('bottom')
-        self.axes.yaxis.set_ticks_position('left')
         
         self.canvas = FigureCanvas(self, -1, self.figure)
         

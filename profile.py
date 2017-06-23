@@ -343,9 +343,10 @@ class radial(wx.Frame):
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
         # Note - previous line stores the whole of the menu into the current object
         
-        self.SetBackgroundColour(wx.Colour("WHITE"))
+        #self.SetBackgroundColour(wx.Colour("WHITE"))
 
-        self.figure = Figure(dpi=76)
+        self.figure = Figure(figsize=(8,6), dpi=76)
+        self.figure.patch.set_facecolor('#F2F1F0')
         self.axes = self.figure.add_subplot(111)
         
         self.canvas = FigureCanvas(self, -1, self.figure)
@@ -551,8 +552,8 @@ class radial(wx.Frame):
             
         self.axes.plot(self.drdf, self.rdf, c=col, alpha=1, linewidth=lw, zorder = 50)
         self.axes.set_title('Diffraction Pattern Intensity Profile')
-        self.axes.set_xlabel('Scattering Vector (1/'+self.angstrom+')')
-        self.axes.set_ylabel('Intensity')
+        self.axes.set_xlabel('Scattering Vector (1/'+self.angstrom+')',size=16)
+        self.axes.set_ylabel('Intensity',size=16)
         self.axes.set_yticks([])
         #print("Press 'm' mark peaks.")
         #axi2.set_xlim(0,5)
@@ -596,7 +597,7 @@ class radial(wx.Frame):
                             label = r'$\mathsf{('+label.replace('-',r'\bar ')+')}$'
                         #print(label)
                         bbox_props = dict(boxstyle="round", fc=sim_color, ec="0.5", alpha=0.7)
-                        self.axes.text(simulation.sdrdf[i], sim_norm[i]*simulation.sim_intens + .05, label, ha="center", va="bottom", size=10, rotation=90, zorder = 100,
+                        self.axes.text(simulation.sdrdf[i], sim_norm[i]*simulation.sim_intens + .05, label, ha="center", va="bottom", size=12, rotation=90, zorder = 100,
                             bbox=bbox_props)
         
             print(sim_name, points )
@@ -609,8 +610,7 @@ class radial(wx.Frame):
         self.axes.axis('auto')
         self.axes.set_xlim(0, self.limit+0.0001)
         self.axes.set_ylim(0, self.rdf.max()+self.rdf.max()*.2)
-        self.axes.xaxis.set_ticks_position('bottom')
-        self.axes.yaxis.set_ticks_position('left')
+        self.figure.tight_layout()
         show()
         #self.axes.figure.canvas.draw()
         
@@ -992,8 +992,8 @@ class radial(wx.Frame):
                 
                 name, ext = os.path.splitext(filename)
                 
-                di_max = 1.4
-                d_min = str(1/1.4)
+                di_max = self.limit
+                d_min = str(1/di_max)
 
                 cif_name = os.path.join(self.dirname, filename)
                 

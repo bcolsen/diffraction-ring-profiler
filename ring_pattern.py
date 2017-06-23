@@ -125,7 +125,7 @@ class ring_pattern(wx.Frame):
         
         self.SetBackgroundColour(wx.Colour("WHITE"))
 
-        self.figure = Figure(figsize=(6,6), dpi=76)
+        self.figure = Figure(figsize=(8,8), dpi=76)
         self.axes = self.figure.add_axes([0,0,1,1],yticks=[],xticks=[],frame_on=False)#
         
         self.canvas = FigureCanvas(self, -1, self.figure)
@@ -308,7 +308,7 @@ class ring_pattern(wx.Frame):
                             patchB=circ_mark,
                             relpos=(0.5, 0.5),
                             )
-                        an = self.axes.annotate(label, xy=(0, 0),xytext=(.1+col_index/10.0, .1+j/15.0),textcoords='axes fraction', ha="center", va="center", size=16, rotation=0, zorder = 90-col_index, picker=True,
+                        an = self.axes.annotate(label, xy=(0, 0),xytext=(.1+col_index/10.0, .1+j/15.0),textcoords='axes fraction', ha="center", va="center", size=20, rotation=0, zorder = 90-col_index, picker=True,
                             bbox=bbox_props, arrowprops=arrowprops)
                         an.draggable()
                         j+=1
