@@ -1,4 +1,6 @@
 # -*- mode: python -*-
+import sys
+sys.setrecursionlimit(10000)
 
 block_cipher = None
 
