@@ -19,8 +19,6 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
 
 ## Installation
 
-## Installation
-
 ### Windows (executable):
 
 1. Download the latest cctbx binaries from here:
