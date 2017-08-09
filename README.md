@@ -1,5 +1,6 @@
-**A program for extracting electron diffraction ring pattern profiles, 
-comparing simulation and making figures.**
+# Diffraction Ring Profiler
+
+### A program for extracting electron diffraction ring pattern profiles, comparing simulation and making figures.
 
 Produced by [Dr. David Mitlin's Research Group](http://www.mitlingroup.com/) 
 from the Department of Chemical and Materials Engineering at the Univerity of Alberta
@@ -18,35 +19,69 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
 
 ## Installation
 
-### Windows
+## Installation
 
-There are zipped executables available in the release section at:
+### Windows (executable):
 
-[https://github.com/bcolsen/diffraction-ring-profiler/releases](https://github.com/bcolsen/diffraction-ring-profiler/releases)
+1. Download the latest cctbx binaries from here:
+   
+   [Download CCTBX](http://cci.lbl.gov/cctbx_build/)
 
-### All Systems
+   Then extract the folder to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/)
+   
+   This is needed to simulate diffraction profiles from .cif crystal files.
 
-Install the Anconda Python 3.5(or greater) Distribution:(It's big(450mb) but it's full of great science tools) 
+2. Download the latest executable from:
 
-[Download Anaconda](https://www.continuum.io/downloads)
+   https://github.com/bcolsen/diffraction-ring-profiler/releases
 
-Open a terminal(Windows use the "Anaconda Prompt") and type:
+3. Double click the executable
 
-`conda install -c newville wxpython-phoenix`
+### Windows & OSX & Linux (Using Anaconda):
 
-To Run:
+1. Download the latest cctbx binaries from here:
 
-`python diffraction_ring_profiler.py`
+   [Download CCTBX](http://cci.lbl.gov/cctbx_build/)
 
-## Cctbx Cif Crystal File Profile Simulations
+   Then extract the folder to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/) 
 
-You can now use cctbx to simulate diffraction profiles from .cif crystal files.
+2. Install the Anaconda Python 3.6 Distribution:(It's big(450mb) but it's full of great science tools) 
 
-Download the latest cctbx binaries from here:
+   [Download Anaconda](https://www.continuum.io/downloads)
 
-[Download CCTBX](http://cci.lbl.gov/cctbx_build/)
+3. Open a terminal(Windows use the "Anaconda Prompt") and type:
 
-Then extract the folder to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/) 
+   ```
+   conda install -c conda-forge wxpython`
+   ```
+
+4. Download the latest source from:
+
+   https://github.com/bcolsen/diffraction-ring-profiler/releases
+
+5. Extract the source to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/).
+
+6. Change to that directory in the terminal and run:
+
+   ```
+   python diffraction_ring_profiler.py
+   ```
+
+### On Ubuntu 16.04+:
+
+```
+$ sudo apt-get install python3 python3-matplotlib python3-scipy python3-numpy python3-imaging
+$ sudo pip3 install wxpython
+```
+
+## Requirements:
+
+* python >= 3.4
+* matplotlib >= 2.0
+* scipy
+* numpy 
+* python imaging library(PIL or pillow)
+
 
 ## Documentation
 
@@ -54,6 +89,6 @@ The are instuctions on the Wiki with screenshots:
 
 [How-to](https://github.com/bcolsen/diffraction-ring-profiler/wiki/How-to-&-Screenshots)
 
-## Screen Shots
+## Screen Shot
 
 ![Screen Shot](https://raw.githubusercontent.com/wiki/bcolsen/diffraction-ring-profiler/images/screen16.png)
