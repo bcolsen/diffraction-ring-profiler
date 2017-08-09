@@ -25,7 +25,7 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
    
    [Download CCTBX](http://cci.lbl.gov/cctbx_build/)
 
-   Then extract the folder to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/)
+   Then extract the folder to your user directory (eg. C:\Users\\<user_name>\ or /home/<user_name>/)
    
    This is needed to simulate diffraction profiles from .cif crystal files.
 
