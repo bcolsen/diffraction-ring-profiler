@@ -41,7 +41,7 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
 
    [Download CCTBX](http://cci.lbl.gov/cctbx_build/)
 
-   Then extract the folder to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/) 
+   Then extract the folder to your user directory (eg. C:\Users\\<user_name>\ or /home/<user_name>/) 
 
 2. Install the Anaconda Python 3.6 Distribution:(It's big(450mb) but it's full of great science tools) 
 
@@ -57,7 +57,7 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
 
    https://github.com/bcolsen/diffraction-ring-profiler/releases
 
-5. Extract the source to your user directory (eg. C:\Users\<user_name>\ or /home/<user_name>/).
+5. Extract the source to your user directory (eg. C:\Users\\<user_name>\ or /home/<user_name>/).
 
 6. Change to that directory in the terminal and run:
 
