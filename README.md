@@ -50,7 +50,7 @@ Journal of Physical Chemistry C, 115 (2011) 24381-24393, doi:10.1021/jp205052f</
 3. Open a terminal(Windows use the "Anaconda Prompt") and type:
 
    ```
-   conda install -c conda-forge wxpython`
+   conda install -c conda-forge wxpython
    ```
 
 4. Download the latest source from:
