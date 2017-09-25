@@ -2,6 +2,10 @@
 import sys
 sys.setrecursionlimit(10000)
 
+from PyInstaller.utils.hooks import is_module_satisfies
+import PyInstaller.compat
+PyInstaller.compat.is_module_satisfies = is_module_satisfies
+
 block_cipher = None
 
 

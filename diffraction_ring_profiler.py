@@ -41,7 +41,7 @@ if not os.path.exists(MPL_config_dir):
 os.environ['MPLCONFIGDIR'] =  MPL_config_dir
 
 
-from numpy import *
+import numpy as np
 
 import matplotlib
 mpl_version = matplotlib.__version__
@@ -58,7 +58,7 @@ print(mpl_old)
 from PIL import Image
 from PIL import TiffImagePlugin
 
-import copy
+from copy import copy
 
 matplotlib.use('WXAgg')
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -68,11 +68,10 @@ from matplotlib.backends.backend_wx import _load_bitmap, cursord
 from matplotlib.figure import Figure
 from numpy.random import rand
 
-from numpy import *
 import scipy.constants as con
 from scipy.ndimage.filters import median_filter
 
-from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.image as mpimg
 
@@ -134,7 +133,7 @@ class Circ:
         cird = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
         cirx = ((ay**2 + ax**2) * (by - cy) + (by**2 + bx**2) * (cy - ay) + (cy**2 + cx**2) * (ay - by))/cird
         ciry = ((ay**2 + ax**2) * (cx - bx) + (by**2 + bx**2) * (ax - cx) + (cy**2 + cx**2) * (bx - ax))/cird
-        cirr = sqrt((ax - cirx)**2 + (ay - ciry)**2)
+        cirr = np.sqrt((ax - cirx)**2 + (ay - ciry)**2)
         print('circle radius=%f, circle x=%f, circle y=%f'%(cirr, cirx, ciry))
 
         self.center = (cirx, ciry)
@@ -175,7 +174,7 @@ class Line:
         ax, ay = self.point2[0,:]
         bx, by = self.point2[1,:]
         
-        self.linelen = sqrt((ax - bx)**2 + (ay - by)**2)
+        self.linelen = np.sqrt((ax - bx)**2 + (ay - by)**2)
         print('line length=%f'%(self.linelen))
         
         self.mark_line(axi)
@@ -288,7 +287,7 @@ class SliderGroup:
         self.sliderText.SetValue('%g'%value)
         self.slider.SetValue(value*1000)
         #print(value, self.parent.img_con.value)
-        gamma_pattern =  (pattern-pattern.min())**self.parent.img_con.value   #log(1+self.parent.img_con.value*pattern)
+        gamma_pattern =  (pattern)**self.parent.img_con.value   #log(1+self.parent.img_con.value*pattern)
         #print(pattern.max(), pattern.min())
         #print(gamma_pattern.max(), gamma_pattern.min())
         self.parent.img.set_data(gamma_pattern)
@@ -306,8 +305,8 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         
         self.cid = 0
         self.circles = []
-        self.point3 = array([])
-        self.point2 = array([])
+        self.point3 = np.array([])
+        self.point2 = np.array([])
         self.lines = []
         self.hist = ['start']
         
@@ -443,8 +442,8 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
     def onclickspot(self, event):
         print(self.point2.size)
         if event.xdata != None and event.ydata != None:
-            if not self.point2.size: self.point2 = array([event.xdata,event.ydata])
-            else: self.point2 = vstack((self.point2, array([event.xdata,event.ydata])))
+            if not self.point2.size: self.point2 = np.array([event.xdata,event.ydata])
+            else: self.point2 = np.vstack((self.point2, np.array([event.xdata,event.ydata])))
         
             print(self.point2, self.point2.size)
         
@@ -469,7 +468,7 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
             axi.figure.canvas.draw()
             #frame.canvas.mpl_disconnect(cid)
             #frame.canvas.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
-            self.point2 = array([])
+            self.point2 = np.array([])
             
             #print("Press 'm' to mark more rings or 'enter' to integrate the pattern.")
             
@@ -479,8 +478,8 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
         
         print(self.point3.size)
         if event.xdata != None and event.ydata != None:
-            if not self.point3.size: self.point3 = array([event.xdata,event.ydata])
-            else: self.point3 = vstack((self.point3, array([event.xdata,event.ydata])))
+            if not self.point3.size: self.point3 = np.array([event.xdata,event.ydata])
+            else: self.point3 = np.vstack((self.point3, np.array([event.xdata,event.ydata])))
         
             print(self.point3, self.point3.size)
         
@@ -505,7 +504,7 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
             axi.figure.canvas.draw()
             #frame.canvas.mpl_disconnect(cid)
             #frame.canvas.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
-            self.point3 = array([])
+            self.point3 = np.array([])
             
             #print("Press 'm' to mark more rings or 'enter' to integrate the pattern.")
             
@@ -523,12 +522,11 @@ class MyNavigationToolbar(NavigationToolbar2WxAgg):
                     self._lastCursor = cursors.SELECT_REGION
                 if self._xypress:
                     x, y = event.x, event.y
-                    lastx, lasty, a, ind, lim, trans = self._xypress[0]
+                    lastx, lasty, a, ind, view = self._xypress[0]
                     self.draw_rubberband(event, x, y, lastx, lasty)
             elif (self._active=='PAN' and
                     self._lastCursor != cursors.MOVE):
                 self.set_cursor(cursors.MOVE)
-
                 self._lastCursor = cursors.MOVE
 
             elif (self._active=='MARK' and 
@@ -587,10 +585,10 @@ class diffaction_int(wx.Frame):
         im = Image.open(os.path.join(self.iconspath, 'diff_profile_text.png'))
         im = im.convert('L')
         x_str = im.tobytes('raw',im.mode,0,1)
-        self.pattern = fromstring(x_str,uint8)
+        self.pattern = np.fromstring(x_str,np.uint8)
         self.pattern.shape = im.size[1], im.size[0]
         
-        self.pattern_open = array([])
+        self.pattern_open = np.array([])
         self.size = self.pattern.shape
         self.camlen = 100
         self.accv = 200
@@ -598,9 +596,10 @@ class diffaction_int(wx.Frame):
         #self.img_con = 0.05
         #self.img_con16 = 0.0001
         self.img_con = Param(1, minimum=0.01, maximum=1.9)
+        self.img_contrast = (self.pattern.min(),self.pattern.max())
         accvm = self.accv * 1000
-        self.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2))) 
-        self.PixelSize()
+        self.wavelen = con.h/(np.sqrt(2 * con.m_e * con.e * accvm)) * 1/(np.sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2))) 
+        self.pixel_size = self.PixelSize()
         print(self.pixel_size)
         
         wx.Frame.__init__(self,None,-1,
@@ -634,14 +633,13 @@ class diffaction_int(wx.Frame):
         # use ID_ for future easy reference - much better that "48", "404" etc
         # The & character indicates the short cut key
         editmenu.Append(ID_UNDO, "&Undo"," Remove last point or circle")
-        editmenu.AppendSeparator()
-        editmenu.Append(ID_PREF,"&Preferences"," Edit Program Preferences")
-        
+       
         # Setting up the menu. filemenu is a local variable at this stage.
         toolsmenu= wx.Menu()
         # use ID_ for future easy reference - much better that "48", "404" etc
         # The & character indicates the short cut key
-        toolsmenu.Append(ID_CAL, "&Calibrate"," Calibrate image resolution using marked rings and known d-spacing")
+        toolsmenu.Append(ID_CAL, "&Calibrate Pixel Size"," Calibrate pixel size using marked rings and known d-spacing")
+        toolsmenu.Append(ID_PREF,"Ca&lculate Pixel Size"," Calculate pixel size using image resolution and cameralength")
         toolsmenu.AppendSeparator()
         toolsmenu.Append(ID_PIX, "&Dead Pixel Fix"," Remove dead and hot pixels from the pattern")
         #toolsmenu.Append(ID_MARK, "&Mark Rings"," Mark diffraction rings to find the pattern center")
@@ -720,13 +718,16 @@ class diffaction_int(wx.Frame):
             self.openimage()
 
     def PixelSize(self):
-        self.pixel_size = 1/(((self.imgcal / 2.54) * 100) * self.wavelen * (float(self.camlen) / 100)) #computes 1/m per pixel
+        return 1/(((self.imgcal / 2.54) * 100) * self.wavelen * (float(self.camlen) / 100)) #computes 1/m per pixel
         #1/(2*sin(.5*(arctan((arange(B)*Dd)/((float(camlen) / 100)*((imgcal / 2.54) * 100))))))/(wavelen * 10**10)
 
     def OnPaint(self, event):
         self.canvas.draw()
         event.Skip()
-
+        
+    def UpdateStatusbar(self):
+        self.statbar.SetStatusText("CamL: {0} cm | AccV: {1} kV | Res: {2:0.4f} 1/Å".format(self.camlen, self.accv, self.pixel_size*10**-10), 0)
+        
     def OnAbout(self,e):
 
         info = wx.adv.AboutDialogInfo()
@@ -779,7 +780,7 @@ class diffaction_int(wx.Frame):
     def openimage(self):
     
         self.toolbar.circles = []
-        self.toolbar.point3 = array([])
+        self.toolbar.point3 = np.array([])
         
         self.canvas.mpl_disconnect(self.toolbar.cid)
         
@@ -788,39 +789,40 @@ class diffaction_int(wx.Frame):
         
         if ext=='.dm3' or ext=='.DM3':
             dm3f = dm3.DM3(os.path.join(self.dirname, self.filename))
-            imageData = dm3f.getInfo()
-            print(imageData, dm3f.pxsize)
+            print(dm3f.info, dm3f.pxsize)
             
-            self.pattern_open = dm3f.getImageData()
+            self.pattern_open = dm3f.imagedata - dm3f.imagedata.min()
             #self.pattern_open = array(self.pattern_open)
             self.pattern_open.shape
             #print9self.pattern_open[[182],[1336]])
+            
             a = self.img_con.value
-            print(imageData['mag'],imageData['hv'])
-            self.accv = int(float(imageData['hv'])/1000.0)
-            if imageData['mode'] == 'DIFFRACTION':
-                self.camlen = int(float(imageData['mag'])/10.0)
+            self.img_contrast = (dm3f.contrastlimits[0] - dm3f.imagedata.min(), dm3f.contrastlimits[1] - dm3f.imagedata.min())
+            print(dm3f.info['mag'],dm3f.info['hv'])
+            self.accv = int(float(dm3f.info['hv'])/1000.0)
+            if dm3f.info['mode'] == b'DIFFRACTION':
+                self.camlen = int(float(dm3f.info['mag'])/10.0)
             print(self.camlen, self.accv)
             
             if dm3f.pxsize[0]:
-                if dm3f.pxsize[1] == '1/nm':
+                if dm3f.pxsize[1] == b'1/nm':
                     self.pixel_size = dm3f.pxsize[0] * 10**9
                     print('.dm3 set pixel_size:', self.pixel_size)
-                elif dm3f.pxsize[1] == '1/A':
+                elif dm3f.pxsize[1] == b'1/A':
                     self.pixel_size = dm3f.pxsize[0] * 10**10
                     print('.dm3 set pixel_size:', self.pixel_size)
-                elif dm3f.pxsize[1] == '1/m':
+                elif dm3f.pxsize[1] == b'1/m':
                     self.pixel_size = dm3f.pxsize[0]
                     print('.dm3 set pixel_size:', self.pixel_size)
                 else:
-                    self.PixelSize()
-                    print('No units in calibration.  Using calculated pixel_size:', self.pixel_size)
+                    self.pixel_size = self.PixelSize()
+                    print('No units in calibration. Using calculated pixel_size:', self.pixel_size)
             elif dm3f.pxsize[0]==1:
-                self.PixelSize()
-                print('Calibration of 1.  Likely  unset.  Using calculated pixel_size:', self.pixel_size)
+                self.pixel_size = self.PixelSize()
+                print('Calibration of 1. Likely unset. Using calculated pixel_size:', self.pixel_size)
             else:
-                self.PixelSize()
-                print('calculated pixel_size:', self.pixel_size)
+                self.pixel_size = self.PixelSize()
+                print('Calibration of 0. Likely unset. Using calculated pixel_size:', self.pixel_size)
         else:
             im = Image.open(os.path.join(self.dirname, self.filename))
             Image._initialized=2
@@ -830,19 +832,19 @@ class diffaction_int(wx.Frame):
                 # return MxN luminance array
                 print('luminance')
                 x_str = im.tobytes('raw',im.mode,0,1)
-                self.pattern_open = fromstring(x_str,uint8)
+                self.pattern_open = np.fromstring(x_str,np.uint8)
                 self.pattern_open.shape = im.size[1], im.size[0]
             elif im.mode=='I;16':
                 # return MxN luminance array
                 print('I;16')
                 x_str = im.tobytes('raw',im.mode,0,1)
-                self.pattern_open = fromstring(x_str,uint16)
+                self.pattern_open = np.fromstring(x_str,np.uint16)
                 self.pattern_open.shape = im.size[1], im.size[0]
             elif im.mode=='I;16B':
                 # return MxN luminance array
                 print('I;16')
                 x_str = im.tobytes('raw',im.mode,0,1)
-                self.pattern_open = fromstring(x_str,'>u2')
+                self.pattern_open = np.fromstring(x_str,'>u2')
                 self.pattern_open.shape = im.size[1], im.size[0]
             else:
                 # return MxN luminance array
@@ -850,7 +852,7 @@ class diffaction_int(wx.Frame):
                 try:
                     im = im.convert('L')
                     x_str = im.tobytes('raw',im.mode,0,1)
-                    self.pattern_open = fromstring(x_str,uint8)
+                    self.pattern_open = np.fromstring(x_str,np.uint8)
                     self.pattern_open.shape = im.size[1], im.size[0]
                 except ValueError:
                     dlg.Destroy()
@@ -862,22 +864,23 @@ class diffaction_int(wx.Frame):
                     self.axes.clear()
                     self.axes.imshow(self.pattern, cmap='gray', aspect='equal', origin='upper')
                     self.canvas.draw()
-                    self.pattern_open = array([])
+                    self.pattern_open = np.array([])
                     self.SetTitle("Diffraction Ring Profiler")
                     return
+            self.img_contrast = (self.pattern_open.min(),self.pattern_open.max())
 
         #log_pattern = log(1+0.001*self.pattern_open)#/log(1+a*pattern).max()*255
         self.size = self.pattern_open.shape
         print('shape: ', self.size)
                     
         self.axes.clear()
-        self.img = self.axes.imshow(self.pattern_open, cmap='gray', aspect='equal', origin='upper')
+        self.img = self.axes.imshow(self.pattern_open, cmap='gray', aspect='equal', origin='upper', vmin=self.img_contrast[0], vmax=self.img_contrast[1])
         self.axes.xaxis.set_ticks_position('bottom')
         self.axes.yaxis.set_ticks_position('left')
         self.canvas.draw()
         
         self.SetTitle("Diffraction Ring Profiler - "+self.filename)
-        self.statbar.SetStatusText("CamL: {0} cm | AccV: {1} kV | Res: {2}".format(self.camlen, self.accv, self.imgcal), 0)
+        self.UpdateStatusbar()
         self.img_con.set(1)
 
 
@@ -903,7 +906,7 @@ class diffaction_int(wx.Frame):
             print(self.toolbar.hist)
             self.canvas.draw()
         elif undo == 'point3' and self.toolbar.point3.size == 2:
-            self.toolbar.point3 = array([])
+            self.toolbar.point3 = np.array([])
             print(self.toolbar.point3)
             self.axes.lines.pop(-1)
             self.canvas.draw()
@@ -922,7 +925,7 @@ class diffaction_int(wx.Frame):
             print(self.toolbar.hist)
             self.canvas.draw()
         elif undo == 'point2':
-            self.toolbar.point2 = array([])
+            self.toolbar.point2 = np.array([])
             print(self.toolbar.point2)
             self.axes.lines.pop(-1)
             self.canvas.draw()
@@ -942,10 +945,12 @@ class diffaction_int(wx.Frame):
         #show()
         
     def filter_outliers(self, pattern, filter_size, std_cutoff):
-        pattern[nonzero(pattern>1e9)] = 0
+        pattern[np.nonzero(pattern>1e9)] = 0
         pattern_filter = median_filter(pattern,size=filter_size)
         pattern_diff = pattern - pattern_filter
-        pattern_index = nonzero(logical_or(-std(pattern_diff)*std_cutoff+pattern_diff.mean() > pattern_diff, pattern_diff > std(pattern_diff)*std_cutoff+pattern_diff.mean()))
+        pattern_index = np.nonzero(np.logical_or(
+                -np.std(pattern_diff)*std_cutoff+pattern_diff.mean() > pattern_diff,
+                pattern_diff > np.std(pattern_diff)*std_cutoff+pattern_diff.mean()))
         print( pattern_index)
         if pattern[pattern_index].any():
             pattern_final = np.copy(pattern)
@@ -954,19 +959,19 @@ class diffaction_int(wx.Frame):
             print( num_filter)
             pattern_final[pattern_index] = pattern_filter[pattern_index]
             pattern_diff_final = pattern - pattern_final
-            print( nonzero(pattern > pattern.max()*.8), pattern.max(), pattern_filter.max(), median(pattern_diff_final), (pattern_diff_final).max())
+            print( np.nonzero(pattern > pattern.max()*.8), pattern.max(), pattern_filter.max(), np.median(pattern_diff_final), (pattern_diff_final).max())
         else:
-            pattern_final = copy(pattern)
+            pattern_final = np.copy(pattern)
             num_filter = 0
         return pattern_final, num_filter, pattern_diff
 
     def OnPref(self,e):
-        dlg = Pref(self, -1, 'Preferences')
+        dlg = Pref(self, -1, 'Calculate Pixel Size')
         dlg.Show(True)
         dlg.Centre()
 
     def OnCal(self,e):
-        dlg = Cal(self, -1, 'Calibration')
+        dlg = Cal(self, -1, 'Calibrate Pixel Size')
         dlg.Show(True)
         dlg.Centre()
 
@@ -983,7 +988,7 @@ class Pref(wx.Dialog):
         
         wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, 450))
         
-        wx.StaticText(self, -1, 'Pattern Properties', (20,20))
+        wx.StaticText(self, -1, 'Set the microscope properties to\ncalculate pixel size', (20,20))
         wx.StaticText(self, -1, 'Accelerating Voltage (kV): ', (20, 80))
         #wx.StaticText(self, -1, 'Wavelength (m): ', (20, 130))
         wx.StaticText(self, -1, 'Camera Length (cm): ', (20, 180))
@@ -1026,17 +1031,17 @@ class Pref(wx.Dialog):
         self.parent.camlen = self.camlen_sc.GetValue()
         self.parent.accv = self.accv_sc.GetValue()
         accvm = self.parent.accv * 1000
-        self.parent.wavelen = con.h/(sqrt(2 * con.m_e * con.e * accvm)) * 1/(sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2)))
+        self.parent.wavelen = con.h/(np.sqrt(2 * con.m_e * con.e * accvm)) * 1/(np.sqrt(1 + (con.e * accvm)/(2 * con.m_e * con.c**2)))
         self.parent.imgcal = float(self.imgcal_tc.GetValue())
         
-        self.parent.PixelSize()
-        print(self.parent.pixel_size)
-        pixel_size_text = '%.3g' % (self.parent.pixel_size*10**-10)
+        pxsize = self.parent.PixelSize()
+        print(pxsize)
+        pixel_size_text = '%.3g' % (pxsize*10**-10)
         self.pixel_size_tc.SetValue(pixel_size_text)
 
     def OnWavelen(self, event):
         self.parent.accv = self.accv_sc.GetValue() * 1000
-        self.parent.wavelen = con.h/(sqrt(2 * con.m_e * con.e * self.parent.accv)) * 1/(sqrt(1 + (con.e * self.parent.accv)/(2 * con.m_e * con.c**2)))
+        self.parent.wavelen = con.h/(np.sqrt(2 * con.m_e * con.e * self.parent.accv)) * 1/(np.sqrt(1 + (con.e * self.parent.accv)/(2 * con.m_e * con.c**2)))
         wavelen_label = '%.3g m' % (self.parent.wavelen)
         print( self.parent.wavelen)
         self.wavelen_text.SetLabel(wavelen_label)
@@ -1058,7 +1063,7 @@ class Pref(wx.Dialog):
             line.label_line(self.parent.axes)
             
         self.parent.axes.figure.canvas.draw()
-        self.parent.statbar.SetStatusText("CamL: {0} cm | AccV: {1} kV | Res: {2}".format(self.parent.camlen, self.parent.accv, self.parent.imgcal), 0)
+        self.parent.UpdateStatusbar()
         self.Destroy()
         
     def OnClose(self, event):
@@ -1072,24 +1077,24 @@ class Cal(wx.Dialog):
         self.radii = []
         self.circles = self.parent.toolbar.circles
         self.lines = self.parent.toolbar.lines
-        
+        self.pxsize = self.parent.pixel_size
         for circle in self.circles:
             self.radii += [circle.radius]
         
-        self.radii = array(self.radii)
+        self.radii = np.array(self.radii)
         
         print( self.radii.size)
             
-        au_radii = array([2.350,2.035,1.4390,1.2272])
+        au_radii = np.array([2.350,2.035,1.4390,1.2272])
         
         if self.radii.size == 0:
             self.radiilen = 0
         elif self.radii.size > 4:
             self.radiilen = 4
-            window_height = 320 + 30 * self.radiilen
+            window_height = 250 + 30 * self.radiilen
         else:
             self.radiilen = self.radii.size
-            window_height = 320 + 30 * self.radiilen
+            window_height = 250 + 30 * self.radiilen
         
         if self.radiilen != 0:
             self.radii.sort() 
@@ -1098,38 +1103,35 @@ class Cal(wx.Dialog):
             wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(350, window_height))
 
             wx.StaticText(self, -1, 'Calibrate image resolution using marked rings\nand known d-spacing in angstroms', (20,20))
-            wx.StaticText(self, -1, 'Accelerating Voltage: ', (20, 80))
-            wx.StaticText(self, -1, str(self.parent.accv) + ' kV', (200, 80))
-            wx.StaticText(self, -1, 'Wavelength: ', (20, 110))
-            wx.StaticText(self, -1, str('%.3g' % (self.parent.wavelen)) + ' m', (200, 110))
-            wx.StaticText(self, -1, 'Camera Length: ', (20, 140))
-            wx.StaticText(self, -1, str(self.parent.camlen) + ' cm', (200, 140))
-            
+                        
             i = 1
             sp = 30
             for radius in self.radii[:self.radiilen]:
-                wx.StaticText(self, -1, 'radius '+str(i)+':', (20, 170+sp*i))
-                wx.StaticText(self, -1, str('%.2f' % radius) + ' pixels', (100, 170+sp*i))
+                wx.StaticText(self, -1, 'radius '+str(i)+':', (20, 50+sp*i))
+                wx.StaticText(self, -1, str('%.2f' % radius) + ' pixels', (100, 50+sp*i))
                 i += 1
                 
             i = 1
             self.rad_ang_tc=[]                
             for au_radius in au_radii[:self.radiilen]:
-                self.rad_ang_tc += [wx.TextCtrl(self, -1, '',  (200, 165+sp*i), (60, -1))]
+                self.rad_ang_tc += [wx.TextCtrl(self, -1, '',  (200, 45+sp*i), (60, -1))]
                 self.rad_ang_tc[i-1].SetValue(str(au_radius))        
                 i += 1
             
-            wx.StaticText(self, -1, 'Pattern Resolution (dpi): ', (20, window_height-100))
+            wx.StaticText(self, -1, 'Pixel Size: ', (20, window_height-100))
         
             self.imgcal_tc = wx.StaticText(self, -1, '',  (200, window_height-100), (60, -1))
-            imagecal_text = '%.2f' % (self.parent.imgcal)
+            imagecal_text = '%.6f 1/Å' % (self.pxsize * 10**-10)
             self.imgcal_tc.SetLabel(imagecal_text)
+            
+            cal_btn = wx.Button(self, 3, 'Calculate Pixel Size', (100, window_height-150))
         
-            set_btn = wx.Button(self, 1, 'Calibrate', (70, window_height-55))
+            set_btn = wx.Button(self, 1, 'Set Pixel Size', (70, window_height-55))
             set_btn.SetFocus()
             clear_btn = wx.Button(self, 2, 'Close', (185, window_height-55))
 
-            self.Bind(wx.EVT_BUTTON, self.OnCal, id=1)
+            self.Bind(wx.EVT_BUTTON, self.OnCal, id=3)
+            self.Bind(wx.EVT_BUTTON, self.OnSet, id=1)
             self.Bind(wx.EVT_BUTTON, self.OnClose, id=2)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
         else:
@@ -1139,38 +1141,42 @@ class Cal(wx.Dialog):
             self.Bind(wx.EVT_BUTTON, self.OnClose, id=2)
             self.Bind(wx.EVT_CLOSE, self.OnClose)
             
-    def OnCal(self, event):
-        
-        old_imgcal = copy(self.parent.imgcal)
-        
+    
+    def calibrate(self):
         imgcals = []
         radius_angs = []
         for rad_tc in self.rad_ang_tc:
             radius_angs += [float(rad_tc.GetValue())]
         print( radius_angs)
-        imgcals = (self.radii[:self.radiilen] * radius_angs * 10**-10 * 2.54)/((float(self.parent.camlen)/100.) * self.parent.wavelen * 100.)
-        print( imgcals)    
-        self.parent.imgcal = imgcals.mean()
+        pxsize = 1/(self.radii[:self.radiilen] * radius_angs * 10**-10)
+        print(pxsize)    
+        return pxsize.mean()
+    
+    
+    def OnSet(self, event):
+        self.parent.pixel_size = self.pxsize
+        print(self.parent.pixel_size)
+        circles = self.parent.toolbar.circles
+        lines = self.parent.toolbar.lines
         
-        imagecal_text = '%.2f' % (self.parent.imgcal)
-        self.imgcal_tc.SetLabel(imagecal_text)
+        del self.parent.axes.texts[-len(circles)-len(lines):]
         
-        self.parent.PixelSize()
-        
-        del self.parent.axes.texts[-len(self.circles)-len(self.lines):]
-        
-        
-        for circle in self.circles:
+        for circle in circles:
             circle.label_circle(self.parent.axes)
-            
-        for line in self.lines:
+                        
+        for line in lines:
             line.label_line(self.parent.axes)
-        
-        self.parent.statbar.SetStatusText("CamL: {0} cm | AccV: {1} kV | Res: {2}".format(self.parent.camlen, self.parent.accv, self.parent.imgcal), 0)
+            
         self.parent.axes.figure.canvas.draw()
-
-#    def OnSave(self, event):
-#        self.parent.cal_list =+ [{'name':cal_name, 'def': 0, 'value':self.parent.imgcal
+        self.parent.UpdateStatusbar()
+        self.Destroy()
+            
+    def OnCal(self, event):
+        
+        self.pxsize = self.calibrate()
+        
+        pxsize_text = '%.6f 1/Å' % (self.pxsize * 10**-10)
+        self.imgcal_tc.SetLabel(pxsize_text)
 
     def OnClose(self, event):
         self.Destroy()
