@@ -3,31 +3,24 @@
 Calculates and displays diffraction pattern profiles
 """
 
-from numpy import *
-
-import matplotlib
-
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
 from matplotlib.backends.backend_wx import _load_bitmap
 from matplotlib.figure import Figure
-from numpy.random import rand
 
 import wx
 import os
 
-from numpy import *
 import numpy as np
-import scipy.constants as con
 from scipy.optimize import leastsq
 import scipy.special
 #import scipy.linalg
-from matplotlib.pyplot import *
-import matplotlib.patches as patches
 
-from polar_pattern import *
-from sim_index import *
+import matplotlib.pyplot as plt
+
+from polar_pattern import reproject_image_into_polar
+import sim_index as sim_i
 
 import ring_pattern
 
@@ -183,7 +176,7 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
         
 
     def _on_subtract(self, evt):
-        self.parent.bgfitp = array([])
+        self.parent.bgfitp = np.array([])
         print('Select points on the background')
         try:
             #print(self.fid)
@@ -282,7 +275,8 @@ class radial(wx.Frame):
         
         self.dirname = self.parent.dirname
         self.filename = self.parent.filename
-        self.pattern_open = pattern_open
+        # TODO no clipping
+        self.pattern_open = np.clip(pattern_open, self.parent.img_contrast[0], self.parent.img_contrast[1]) - self.parent.img_contrast[0]
         self.circles = circles
         
         self.pixel_size = pixel_size
@@ -389,20 +383,20 @@ class radial(wx.Frame):
         self.SetSizer(self.sizer)
         self.Fit()
 
-        self.center(pattern_open, circles, pixel_size)
+        self.center(self.pattern_open, circles, pixel_size)
         self.plot()
     
     def center(self, pattern_open, circles, pixel_size):
         
-        centers = array([])
+        centers = np.array([])
         dspace = []
         
         for circle in circles:
-            if not centers.size: centers = array([circle.center])
-            else: centers = vstack((centers, array([circle.center])))
+            if not centers.size: centers = np.array([circle.center])
+            else: centers = np.vstack((centers, np.array([circle.center])))
             dspace += [circle.dspace]
         
-        dspace = array(dspace)* 10**10    
+        dspace = np.array(dspace)* 10**10    
         dspace.sort()
         print(1/dspace[-1])
         
@@ -430,16 +424,16 @@ class radial(wx.Frame):
         #        'Depending on the size of your image this may take a few minutes.', maximum = 28, parent = self)
 
         y = 0
-        cilist = zeros(9) #list of center index...looking for duplicates
+        cilist = np.zeros(9) #list of center index...looking for duplicates
         
         for i in range(20):
             x=0
             div = divs[y]
             #dialog.Update ( x + y*len(cilist), 'On Division ' + str ( y + 1 ) + ' of ' + str(len(divs)) + '.' )
-            clin = (arange(search_range + 1) - search_range/2) * div[0]
-            C_arrayx = ones((search_range + 1,search_range + 1)) * (C[0] + clin).reshape(-1,1)
-            C_arrayy = ones((search_range + 1,search_range + 1)) * (C[1] + clin)    
-            C_array = c_[C_arrayx.reshape(-1,1),C_arrayy.reshape(-1,1)]
+            clin = (np.arange(search_range + 1) - search_range/2) * div[0]
+            C_arrayx = np.ones((search_range + 1,search_range + 1)) * (C[0] + clin).reshape(-1,1)
+            C_arrayy = np.ones((search_range + 1,search_range + 1)) * (C[1] + clin)    
+            C_array = np.c_[C_arrayx.reshape(-1,1),C_arrayy.reshape(-1,1)]
             #print(div, clin, C_array, C_array.shape)
             peak=[]
             peak_sctr_vec=[]
@@ -454,28 +448,28 @@ class radial(wx.Frame):
                 #dialog.Update ( x + y*len(cilist))
                 x += 1
                 
-            peak = array(peak)
-            index = nonzero(peak == peak.max())
+            peak = np.array(peak)
+            index = np.nonzero(peak == peak.max())
             
             #print(peak, peak.max(), C_array[index], peak_sctr_vec, array(peak_sctr_vec)[index])
             C = C_array[index][0]
             self.C = C
             
-            self.sctr_vec = array(peak_sctr_vec)[index]
+            self.sctr_vec = np.array(peak_sctr_vec)[index]
             self.axes.vlines(self.sctr_vec,0,1)
             self.axes.figure.canvas.draw()
             
             print(index)
             if index[0] == 4:
                 y += 1
-                cilist = zeros(9)
+                cilist = np.zeros(9)
             elif index[0] == 3 or index[0] == 5:
                 cilist[index[0]] += 1
             print(cilist)
             if (cilist > 1).any():
                 print('LOOP CONDITION AVERTED')
                 y += 1
-                cilist = zeros(9)
+                cilist = np.zeros(9)
             print('y = ', y,'i = ', i)
             if y>2 or i==19:
                 #dialog.Update (28)
@@ -499,31 +493,32 @@ class radial(wx.Frame):
         boxx = Nx/2. - abs(Nx/2. - C[0])-2
         boxy = Ny/2. - abs(Ny/2. - C[1])-2
         if boxx <= boxy:
-            boxs = floor(boxx)
+            boxs = np.floor(boxx)
         else:
-            boxs = floor(boxy)
+            boxs = np.floor(boxy)
             
         self.boxs = boxs
     
-        B = int(floor(boxs/2))
+        B = int(np.floor(boxs/2))
         Dd = boxs/B
-        rdf = zeros((B))
+        rdf = np.zeros((B))
     
         #x = random.rand(N)*lx
         #y = random.rand(N)*ly
         
         #print(Nx, Ny, boxs, Dd, C, len(range(Nx)), len(range(Ny)))
         
-        y = ((ones((Ny,Nx)) * arange(Ny).reshape(-1,1)) - C[1])**2
-        x = ((ones((Ny,Nx)) * arange(Nx)) - C[0])**2
+        y = ((np.ones((Ny,Nx)) * np.arange(Ny).reshape(-1,1)) - C[1])**2
+        x = ((np.ones((Ny,Nx)) * np.arange(Nx)) - C[0])**2
         with Timer():
-            d = around(sqrt(x + y)/Dd)
+            d = np.around(np.sqrt(x + y)/Dd)
         #print(d.shape)
 
-        r = arange(B)
+        r = np.arange(B)
         #print(d, pattern_open/255.)
+        
         with Timer():
-            self.rdf, bin_edge = histogram(d, bins = B, range=(0,B), weights=pattern_open/float(pattern_open.max()))
+            self.rdf, bin_edge = np.histogram(d, bins = B, range=(0,B), weights=pattern_open/float(pattern_open.max()))
         #print(self.rdf, rdf.size, bin_edge, bin_edge.size)
 
         r[0] = 1
@@ -531,7 +526,7 @@ class radial(wx.Frame):
         
         self.rdf_max = self.rdf.max()
                 
-        self.drdf = (arange(B)*Dd) * (pixel_size / 10**10)
+        self.drdf = (np.arange(B)*Dd) * (pixel_size / 10**10)
         
         #print(self.rdf)
         #print(self.rdf, self.drdf , len(self.rdf), len(self.drdf))
@@ -561,7 +556,7 @@ class radial(wx.Frame):
             if self.polar_neg: cmap='binary'
             else: cmap='gray'
             #print(cmap, self.polar_neg)
-            log_polar = rot90(log(1+self.gamma*self.polar_grid))
+            log_polar = np.rot90(np.log(1+self.gamma*self.polar_grid))
             self.axes.imshow(log_polar, cmap=cmap, origin='lower', interpolation='bicubic',
                 extent=(0, self.drdf.max(), 0, self.rdf.max()+self.rdf.max()*.2))
         if self.prosim:
@@ -611,7 +606,7 @@ class radial(wx.Frame):
         self.axes.set_xlim(0, self.limit+0.0001)
         self.axes.set_ylim(0, self.rdf.max()+self.rdf.max()*.2)
         self.figure.tight_layout()
-        show()
+        plt.show()
         #self.axes.figure.canvas.draw()
         
     def OnPaint(self, event):
@@ -632,11 +627,11 @@ class radial(wx.Frame):
             self.filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
             with file(os.path.join(self.dirname, self.filename), 'w') as outfile:
-                data = array([self.rdf, self.drdf])
+                data = np.array([self.rdf, self.drdf])
                 outfile.write('# Pattern Center\n')
-                savetxt(outfile, self.C.reshape((1,-2)))
+                np.savetxt(outfile, self.C.reshape((1,-2)))
                 outfile.write('# Pattern Profile {0}\n'.format(data.shape))
-                savetxt(outfile, rot90(data ,k=3))
+                np.savetxt(outfile, np.rot90(data ,k=3))
                 if self.plot_sim:
                     if len(self.simulations) >= 3:
                         sim_len_i = 3
@@ -647,10 +642,10 @@ class radial(wx.Frame):
                     sim_norm = sim/float(max(sim))
                     #print(sim, max(sim[1:]), min(sim[1:]), sim_norm)
                     #simulation.sdrdf, 0, sim_norm*simulation.sim_intens, color[col_index] ,linewidth = 2, zorder = 2)
-                    sim = array([sim_norm*simulation.sim_intens, simulation.sdrdf])
+                    sim = np.array([sim_norm*simulation.sim_intens, simulation.sdrdf])
                     outfile.write('# Pattern Simulation {0}\n'.format(sim.shape))
                     print(sim.shape, sim)
-                    savetxt(outfile, rot90(sim ,k=3))
+                    np.savetxt(outfile, np.rot90(sim ,k=3))
             # Open the file for write, write, close
 #            self.filename=dlg.GetFilename()
 #            self.dirname=dlg.GetDirectory()
@@ -710,15 +705,15 @@ class radial(wx.Frame):
         #print(self.drdf, ax, self.drdf[i-fit_range:i+fit_range+1])
         
         # form the Vandermonde matrix
-        A = vander(self.drdf[i-fit_range:i+fit_range+1], poly_degree)
+        A = np.vander(self.drdf[i-fit_range:i+fit_range+1], poly_degree)
  
         # find the x that minimizes the norm of Ax-y
-        (coeffs, residuals, rank, sing_vals) = linalg.lstsq(A, self.rdf[i-fit_range:i+fit_range+1])
+        (coeffs, residuals, rank, sing_vals) = np.linalg.lstsq(A, self.rdf[i-fit_range:i+fit_range+1])
  
         # create a polynomial using coefficients
-        parab = poly1d(coeffs)
+        parab = np.poly1d(coeffs)
         
-        self.t = linspace(self.drdf[i-fit_range],self.drdf[i+fit_range],num_inter)
+        self.t = np.linspace(self.drdf[i-fit_range],self.drdf[i+fit_range],num_inter)
         
         self.peak_parab = parab(self.t)
         
@@ -752,11 +747,11 @@ class radial(wx.Frame):
             fwhm = p[1]
             shape = p[2]
             
-            tmp = 1/scipy.special.wofz(zeros((len(x))) \
-                +1j*sqrt(log(2.0))*shape).real
+            tmp = 1/scipy.special.wofz(np.zeros((len(x))) \
+                +1j*np.sqrt(np.log(2.0))*shape).real
             tmp = tmp*amp* \
-                scipy.special.wofz(2*sqrt(log(2.0))*(x-pos)/fwhm+1j* \
-                sqrt(log(2.0))*shape).real + p[3]
+                scipy.special.wofz(2*np.sqrt(np.log(2.0))*(x-pos)/fwhm+1j* \
+                np.sqrt(np.log(2.0))*shape).real + p[3]
             return tmp
         
         if self.use_voigt:
@@ -770,8 +765,8 @@ class radial(wx.Frame):
         
             
         if event.xdata != None and event.ydata != None and event.button == 1:
-            if not self.bgfitp.size: self.bgfitp = array([ax,self.rdf[i]])
-            else: self.bgfitp = vstack((self.bgfitp, array([ax,self.rdf[i]])))
+            if not self.bgfitp.size: self.bgfitp = np.array([ax,self.rdf[i]])
+            else: self.bgfitp = np.vstack((self.bgfitp, np.array([ax,self.rdf[i]])))
     
             print(self.bgfitp, self.bgfitp.size)
     
@@ -818,7 +813,7 @@ class radial(wx.Frame):
             #self.background[nonzero(self.background > rdf_max)] = rdf_max
             #plot_sub = axi2.plot(self.drdf,self.background,'m')
             
-            start = nonzero(self.rdf>0)[0][0]
+            start = np.nonzero(self.rdf>0)[0][0]
             
             print(self.rdf[start:].min())
             
@@ -833,7 +828,7 @@ class radial(wx.Frame):
             
             axi2.figure.canvas.draw()
             
-            self.bgfitp = array([])
+            self.bgfitp = np.array([])
             print(self.toolbar.fid)
             self.toolbar.fid = self.canvas.mpl_disconnect(self.toolbar.fid)
             print(self.toolbar.fid)
@@ -888,10 +883,10 @@ class radial(wx.Frame):
         
         self.polar_grid = polar_grid
 
-        rdf = array(self.rdf)
-        drdf = array(self.drdf)
+        rdf = np.array(self.rdf)
+        drdf = np.array(self.drdf)
         #print(pmrdf.shape, psrdf.max())
-        self.dpmrdf = arange(pmrdf.shape[0])*(self.pixel_size / 10**10)
+        self.dpmrdf = np.arange(pmrdf.shape[0])*(self.pixel_size / 10**10)
         #print(dpmrdf.shape)
     
         #rdf /= rdf.max()
@@ -1033,19 +1028,19 @@ class radial(wx.Frame):
                 mt_output, sf_error = subprocess.Popen(**pro_args).communicate()
                 print(mt_output)
 
-                sf_data = genfromtxt(BytesIO(sf_output), dtype=None, names=('h','k','l','sf'))
+                sf_data = np.genfromtxt(BytesIO(sf_output), dtype=None, names=('h','k','l','sf'))
 
                 #print sf_data.shape
                 sf= sf_data['sf']
                 print(sf)
 
-                ds_data = genfromtxt(BytesIO(ds_output), dtype=None, names=('h','k','l','ds'))
+                ds_data = np.genfromtxt(BytesIO(ds_output), dtype=None, names=('h','k','l','ds'))
 
                 #print ds_data.shape
                 ds= ds_data['ds']
                 print(ds)
 
-                mt_data = genfromtxt(BytesIO(mt_output), dtype=None, names=('h','k','l','mt'))
+                mt_data = np.genfromtxt(BytesIO(mt_output), dtype=None, names=('h','k','l','mt'))
 
                 #print ds_data.shape
                 mt= mt_data['mt']
@@ -1058,33 +1053,28 @@ class radial(wx.Frame):
                     
                 print(hkl_list)
 
-                sol2 = (0.5/ds)**2
+                # Mott–Bethe formula to correct for electrons
+                #meh = 0.026629795
+                sfc2 = (sf)/((1/ds)**(2.5))
 
-                sfc = (sf)/sol2
+                intense = sfc2*mt
 
-                sfc2 = (sf)/((1/ds)**(2+.5))
-
-
-                int1 = sfc*mt
-                int2 = sfc2*mt
-
-                int2n = int2/int2.max()
-                int1n = int1/int1.max()
+                intensen = intense/intense.max()
 
                 ## Broden
                 x = np.linspace(0,di_max,1000)
                 di =1/ds
                 vois =[]
-                for i,d in zip(int2n,di):
-                    vois += [voigt(x,i,d,0.025,1)]
+                for i,d in zip(intensen,di):
+                    vois += [voigt(x,i,d,0.02,1)]
 
                 brd = np.array(vois).sum(axis=0)
 
                 dtypes = [('inv_d',float),('intensity',float),('index','<U4')]
-                sim_open = np.array(list(zip(di,int2n,hkl_list)), dtypes)
+                sim_open = np.array(list(zip(di,intensen,hkl_list)), dtypes)
                 sim_open.sort(order='inv_d')
                 print(sim_open,sim_open.shape,len(sim_open.shape))
-                self.simulations += [Simulation(name, sim_open[['inv_d','intensity']], sim_open['index'])]
+                self.simulations += [sim_i.Simulation(name, sim_open[['inv_d','intensity']], sim_open['index'])]
                 
                 self.plot_sim = 1
                 self.prosim = 1
@@ -1114,7 +1104,7 @@ class radial(wx.Frame):
             print(self.dirname)
             
             try:
-                sim_open = loadtxt(os.path.join(self.dirname, filename),skiprows=0)
+                sim_open = np.loadtxt(os.path.join(self.dirname, filename),skiprows=0)
             except:
                 dlg.Destroy()
                 error_file = 'File must be an exported GDIS Graph.'
@@ -1123,9 +1113,9 @@ class radial(wx.Frame):
                 error_int_dlg.Show(True)
                 error_int_dlg.Centre()
             else:
-                print(len(nonzero(sim_open[:,1])[0]))
-                if len(nonzero(sim_open[:,1])[0]) <= 200:
-                    self.simulations += [Simulation(name, sim_open)]
+                print(len(np.nonzero(sim_open[:,1])[0]))
+                if len(np.nonzero(sim_open[:,1])[0]) <= 200:
+                    self.simulations += [sim_i.Simulation(name, sim_open)]
                     
                     self.plot_sim = 1
                     
@@ -1159,7 +1149,7 @@ class radial(wx.Frame):
             print(self.dirname)
             
             try:
-                sim_open = loadtxt(os.path.join(self.dirname, filename),skiprows=0)
+                sim_open = np.loadtxt(os.path.join(self.dirname, filename),skiprows=0)
             except:
                 dlg.Destroy()
                 error_file = 'File must be an exported GDIS Graph.'
@@ -1170,7 +1160,7 @@ class radial(wx.Frame):
             else:
                 self.prosim = 1
                 theta_2 = sim_open[:,0]
-                inv_d = (2*sin(((theta_2/180)*pi)/2.))/.5
+                inv_d = (2*np.sin(((theta_2/180)*np.pi)/2.))/.5
                 
                 intensity = sim_open[:,1]
                 intensity /= intensity.max()
@@ -1195,7 +1185,7 @@ class radial(wx.Frame):
         ringframe.Show(True)
             
     def OnSimLabel(self,e):
-        dlg = Index(self, -1, 'Index Peaks')
+        dlg = sim_i.Index(self, -1, 'Index Peaks')
         dlg.Show(True)
         
     def OnPro_Pref(self,e):

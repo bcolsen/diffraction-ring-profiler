@@ -1,8 +1,10 @@
-from numpy import *
-import scipy as sp
-import scipy.ndimage
+#!/usr/bin/env python
+"""
+Polar Reprojections
+"""
 
-from PIL import Image
+import numpy as np
+import scipy as sp
 
 import matplotlib.pyplot as plt
 
@@ -15,12 +17,12 @@ def plot_polar_pattern(data, origin, boxs, rdf, drdf):
     polar_grid, r, theta, pmrdf, psrdf = reproject_image_into_polar(data, origin, boxs)
     
     a = 0.1	
-    log_pattern = rot90(log(1+a*polar_grid))
+    log_pattern = np.rot90(np.log(1+a*polar_grid))
     
-    rdf = array(rdf)
-    drdf = array(drdf)
+    rdf = np.array(rdf)
+    drdf = np.array(drdf)
     print(pmrdf.shape, psrdf.max())
-    dpmrdf = linspace(drdf.min(), drdf.max(), pmrdf.shape[0])
+    dpmrdf = np.linspace(drdf.min(), drdf.max(), pmrdf.shape[0])
     print(dpmrdf.shape)
     
     rdf /= rdf.max()
@@ -49,7 +51,7 @@ def reproject_image_into_polar(data, origin, boxs):
     """Reprojects a 2D numpy array ("data") into a polar coordinate system.
     "origin" is a tuple of (x0, y0) and defaults to the center of the image."""
         
-    Cr = around(origin)
+    Cr = np.around(origin)
     print(origin)
     #print(Cr[0]-boxs,Cr[0]+boxs,Cr[1]-boxs,Cr[1]+boxs)
 
@@ -70,16 +72,16 @@ def reproject_image_into_polar(data, origin, boxs):
     r, theta = cart2polar(x, y)
     
     # Make a regular (in polar space) grid based on the min and max r & theta
-    r_i = arange(boxs) #linspace(0, boxs, nx)
-    theta_i = linspace(theta.min(), theta.max(), ny)
-    theta_grid, r_grid = meshgrid(theta_i, r_i)
+    r_i = np.arange(boxs) #linspace(0, boxs, nx)
+    theta_i = np.linspace(theta.min(), theta.max(), ny)
+    theta_grid, r_grid = np.meshgrid(theta_i, r_i)
 
     # Project the r and theta grid back into pixel coordinates
     xi, yi = polar2cart(r_grid, theta_grid)
     xi += origin[0] # We need to shift the origin back to 
     yi += origin[1] # back to the lower-left corner...
     xi, yi = xi.flatten(), yi.flatten()
-    coords = vstack((xi, yi)) # (map_coordinates requires a 2xn array)
+    coords = np.vstack((xi, yi)) # (map_coordinates requires a 2xn array)
 	
     #print(coords.shape)
 	
@@ -103,19 +105,19 @@ def index_coords(data, origin):
     to set the origin to the lower left corner of the image."""
     ny, nx = data.shape[:2]
     origin_x, origin_y = origin
-    x, y = meshgrid(arange(nx), arange(ny))
-    x -= origin_x.astype(int64)
-    y -= origin_y.astype(int64)
+    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+    x -= origin_x.astype(np.int64)
+    y -= origin_y.astype(np.int64)
     return x, y
     
 def cart2polar(x, y):
-    r = sqrt(x**2 + y**2)
-    theta = arctan2(y, x)
+    r = np.sqrt(x**2 + y**2)
+    theta = np.arctan2(y, x)
     return r, theta
 
 def polar2cart(r, theta):
-    x = r * cos(theta)
-    y = r * sin(theta)
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
     return x, y
     
 def polar_mean(output):
@@ -138,11 +140,11 @@ def polar_mean(output):
     #print(output[:50,:250], output[-50:,:250])
     
     #print(len(ptv),ptv)
-    ptv = array(ptv)
+    ptv = np.array(ptv)
     ptv[ptv==0]=1
     #print(len(ptv),ptv)
     
-    out_median = median(output, axis=1)
+    out_median = np.median(output, axis=1)
     
     return out_mean, output.sum(axis=1)/ptv, out_median
     
@@ -162,34 +164,34 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
         pro_base_l = basis
         pro_intens_l = pro_intens
         img_size = boxs*2 #-9
-        lin_index = linspace(0,2*len(basis),img_size)-len(basis)
+        lin_index = np.linspace(0,2*len(basis),img_size)-len(basis)
         
     else:
         theta_2 = basis
         origin = (len(theta_2), len(theta_2))
         print(origin)
         
-        pro_base = (2*sin(((theta_2/180)*pi)/2.))/.5
+        pro_base = (2*np.sin(((theta_2/180)*np.pi)/2.))/.5
         
-        pro_base_concat = concatenate((-pro_base[:0:-4],pro_base[::4]))
+        pro_base_concat = np.concatenate((-pro_base[:0:-4],pro_base[::4]))
         pro_base_concat = (pro_base_concat/pro_base.max()) * len(pro_base)
         img_size = len(pro_base_concat)
         
     #    plt.figure()
     #    plt.plot(pro_base, pro_intens, 'r')
 
-        pro_base_l = linspace(0,max(pro_base),len(pro_base))
+        pro_base_l = np.linspace(0,max(pro_base),len(pro_base))
         
     #    plt.plot(pro_base_l, pro_intens, 'b')
 
-        pro_intens_l = interp(pro_base_l, pro_base, pro_intens)
+        pro_intens_l = np.interp(pro_base_l, pro_base, pro_intens)
         
     #    plt.plot(pro_base_l, pro_intens_l, 'g.')
     #    
     #    plt.figure()
     #    plt.plot(pro_base_concat)
     
-        lin_index = linspace(0,2*len(pro_base),img_size)-len(pro_base)
+        lin_index = np.linspace(0,2*len(pro_base),img_size)-len(pro_base)
     
 #    plt.plot(lin_index)
 	
@@ -200,7 +202,7 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     #y -= origin_y
 #    r, theta = cart2polar(x, y)
     
-    x_l,y_l = meshgrid(lin_index,lin_index)
+    x_l,y_l = np.meshgrid(lin_index,lin_index)
     r_l, theta_l = cart2polar(x_l, y_l)
     
 #    print(r, r.max())
@@ -224,7 +226,7 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     #yi += origin[1] # back to the lower-left corner...
     #xi, yi = xi.flatten(), yi.flatten()
     r_l = r_l.flatten()
-    coords = vstack((r_l, zeros(len(r_l)))) # (map_coordinates requires a 2xn array)
+    coords = np.vstack((r_l, np.zeros(len(r_l)))) # (map_coordinates requires a 2xn array)
     
     print(coords)
 	
@@ -233,7 +235,7 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     # Reproject each band individually and the restack
     # (uses less memory than reprojection the 3-dimensional array in one step)
     bands = []
-    band = array([pro_intens_l,ones(len(pro_intens_l))]).T
+    band = np.array([pro_intens_l,np.ones(len(pro_intens_l))]).T
     zi = sp.ndimage.map_coordinates(band, coords, order=2)
     bands = (zi.reshape((int(img_size), int(img_size))))
     output = bands
@@ -247,7 +249,7 @@ def make_profile_rings(pro_intens, basis, origin, boxs, is_linear = 0):
     return output
 
 if __name__ == "__main__":
-    data = loadtxt("../tem/temfig/au_pro.txt")
+    data = np.loadtxt("../tem/temfig/au_pro.txt")
     
     theta_2 = data[:,0]
     

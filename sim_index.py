@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # sim_index.py
-from numpy import *
+import numpy as np
 import wx
 import wx.lib.scrolledpanel as scrolled
       
@@ -163,7 +163,7 @@ class Simulation:
             self.sim_intens = 1
         else:
             theta_2 = sim_open[:,0]
-            inv_d = (2*sin(((theta_2/180)*pi)/2.))/.5
+            inv_d = (2*np.sin(((theta_2/180)*np.pi)/2.))/.5
             
             intensity = sim_open[:,1]
             intensity /= intensity.max()
@@ -174,7 +174,7 @@ class Simulation:
             sdrdf = inv_d
             self.sim_intens = 1
         
-            sim_index = nonzero(srdf!=0)
+            sim_index = np.nonzero(srdf!=0)
 
             sdrdf = sdrdf[sim_index]
             srdf = srdf[sim_index]

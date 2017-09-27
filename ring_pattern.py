@@ -2,31 +2,20 @@
 """
 Makes ring patterns from profiles
 """
-from numpy import *
-
-import matplotlib
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
-from matplotlib.backends.backend_wx import _load_bitmap
 from matplotlib.figure import Figure
-from numpy.random import rand
 
 import wx
 import os
 
-from numpy import *
-import scipy.constants as con
-from scipy.optimize import leastsq
-#import scipy.linalg
-from matplotlib.pyplot import *
+import numpy as np
+
 import matplotlib.patches as patches
 
-from polar_pattern import *
-from sim_index import *
-
-import ring_pattern
+from polar_pattern import make_profile_rings
 
 import time
 
@@ -65,6 +54,24 @@ class MyNavigationToolbar2(NavigationToolbar2WxAgg):
     def set_cursor(self, cursor):
         cursor =wx.StockCursor(cursord[cursor])
         self.canvas.SetCursor( cursor )
+
+
+# cursors
+class Cursors:  #namespace
+    HAND, POINTER, SELECT_REGION, MOVE, BULLSEYE = range(5)
+cursors = Cursors()
+
+#print(cursord)
+cursord = {
+    cursors.MOVE : wx.CURSOR_HAND,
+    cursors.HAND : wx.CURSOR_HAND,
+    cursors.POINTER : wx.CURSOR_ARROW,
+    cursors.SELECT_REGION : wx.CURSOR_CROSS,
+    cursors.BULLSEYE : wx.CURSOR_BULLSEYE,        
+    }
+    
+print(cursord)
+
 
 class ring_pattern(wx.Frame):
 
@@ -248,7 +255,7 @@ class ring_pattern(wx.Frame):
             #line[line < 0] = 0
             #plot(line)
         
-        self.pattern_open_crop = self.pattern_open_crop.astype(float32)
+        self.pattern_open_crop = self.pattern_open_crop.astype(np.float32)
 
         self.pattern_open_crop -= self.back_patt
         #plot(self.pattern_open_crop[:,middle_x])
@@ -275,7 +282,7 @@ class ring_pattern(wx.Frame):
             sim_norm = sim/float(max(sim))
             #print(sim, max(sim[1:]), min(sim[1:]), sim_norm)
             marks += [self.axes.plot(0,0,'-',color=sim_color, zorder = -10)[0]]
-            rect = Rectangle((-self.parent.limit,-self.parent.limit),self.parent.limit,self.parent.limit, facecolor="none", edgecolor="none")
+            rect = patches.Rectangle((-self.parent.limit,-self.parent.limit),self.parent.limit,self.parent.limit, facecolor="none", edgecolor="none")
             self.axes.add_patch(rect)
             if not simulation.peak_index_labels:
                 for radius in simulation.sdrdf:
