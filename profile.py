@@ -618,7 +618,7 @@ class radial(wx.Frame):
     # Open the file, do an RU sure check for an overwrite!
         filename = os.path.splitext(self.filename)
         dlg = wx.FileDialog(self, "Choose a file", self.dirname, filename[0] + '.txt', "*.*", \
-            wx.FD_SAVE | wx.OVERWRITE_PROMPT)
+            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             # Grab the content to be saved
             #itcontains = self.control.GetValue()
@@ -626,7 +626,7 @@ class radial(wx.Frame):
             
             self.filename=dlg.GetFilename()
             self.dirname=dlg.GetDirectory()
-            with file(os.path.join(self.dirname, self.filename), 'w') as outfile:
+            with open(os.path.join(self.dirname, self.filename), 'w') as outfile:
                 data = np.array([self.rdf, self.drdf])
                 outfile.write('# Pattern Center\n')
                 np.savetxt(outfile, self.C.reshape((1,-2)))
